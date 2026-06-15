@@ -39,9 +39,10 @@ struct CompassTabView: View {
             heading = store.heading
             refreshWeatherIfNeeded()
         }
-        .onChange(of: store.heading) { _, newValue in
+        .onChange(of: store.heading) { oldValue, newValue in
+            let delta = Self.shortestAngleDelta(from: oldValue, to: newValue)
             withAnimation(.interactiveSpring(response: 0.32, dampingFraction: 0.86)) {
-                heading = newValue
+                heading += delta
             }
         }
         .onChange(of: store.latitude) { _, _ in
@@ -111,7 +112,7 @@ struct CompassTabView: View {
 
     private var headingSection: some View {
         VStack(spacing: 8) {
-            Text("\(store.compassDirectionName) \(Int(heading.rounded()))°")
+            Text("\(store.compassDirectionName) \(Int(store.heading.rounded()))°")
                 .font(.system(size: 36, weight: .thin))
                 .foregroundStyle(.white)
 
@@ -155,6 +156,13 @@ struct CompassTabView: View {
         Task {
             await weatherService.refresh(for: location)
         }
+    }
+
+    private static func shortestAngleDelta(from: Double, to: Double) -> Double {
+        var delta = (to - from).truncatingRemainder(dividingBy: 360)
+        if delta > 180 { delta -= 360 }
+        if delta < -180 { delta += 360 }
+        return delta
     }
 }
 
