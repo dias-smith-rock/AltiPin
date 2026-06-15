@@ -256,8 +256,12 @@
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";
+				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin 通过运动状态识别自动开始/停止记录，以节省电量。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = location;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -288,8 +292,12 @@
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";
+				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin 通过运动状态识别自动开始/停止记录，以节省电量。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = location;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
