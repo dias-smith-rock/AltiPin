@@ -4,6 +4,16 @@
 //
 
 import SwiftUI
+import UIKit
+
+private final class MajorTickHaptic {
+    private let generator = UISelectionFeedbackGenerator()
+
+    func tick() {
+        generator.selectionChanged()
+        generator.prepare()
+    }
+}
 
 struct CompassTabView: View {
     @ObservedObject var store: OutdoorDashboardStore
@@ -11,6 +21,7 @@ struct CompassTabView: View {
 
     @State private var heading: Double = 0
     @State private var showSettings = false
+    @State private var majorTickHaptic = MajorTickHaptic()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -43,6 +54,11 @@ struct CompassTabView: View {
             let delta = Self.shortestAngleDelta(from: oldValue, to: newValue)
             withAnimation(.interactiveSpring(response: 0.32, dampingFraction: 0.86)) {
                 heading += delta
+            }
+
+            let crossings = Self.majorTicksCrossed(from: oldValue, to: newValue)
+            for _ in 0..<crossings {
+                majorTickHaptic.tick()
             }
         }
         .onChange(of: store.latitude) { _, _ in
@@ -163,6 +179,35 @@ struct CompassTabView: View {
         if delta > 180 { delta -= 360 }
         if delta < -180 { delta += 360 }
         return delta
+    }
+
+    private static func normalizedHeading(_ value: Double) -> Double {
+        (value.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
+    }
+
+    private static func majorTicksCrossed(from old: Double, to new: Double) -> Int {
+        let delta = shortestAngleDelta(from: old, to: new)
+        guard abs(delta) >= 1 else { return 0 }
+
+        let start = normalizedHeading(old)
+        if delta > 0 {
+            var boundary = (floor(start / 30) + 1) * 30
+            var count = 0
+            while boundary <= start + delta + 0.001 {
+                count += 1
+                boundary += 30
+            }
+            return count
+        } else {
+            var boundary = floor(start / 30) * 30
+            if boundary >= start { boundary -= 30 }
+            var count = 0
+            while boundary >= start + delta - 0.001 {
+                count += 1
+                boundary -= 30
+            }
+            return count
+        }
     }
 }
 
