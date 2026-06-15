@@ -251,11 +251,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AltiPin/AltiPin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = AltiPin;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";
 				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin 通过运动状态识别自动开始/停止记录，以节省电量。";
@@ -269,8 +271,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.AltiPin;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.altipin2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -287,11 +289,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = AltiPin/AltiPin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = AltiPin;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";
 				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin 通过运动状态识别自动开始/停止记录，以节省电量。";
@@ -305,8 +309,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.AltiPin;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goodcraft.altipin2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

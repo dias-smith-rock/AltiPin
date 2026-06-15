@@ -20,10 +20,14 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var cumulativeDistanceMeters: Double = 0
     @Published private(set) var horizontalAccuracy: Double = -1
     @Published private(set) var verticalAccuracy: Double = -1
+    @Published private(set) var levelOffsetX: Double = 0
+    @Published private(set) var levelOffsetY: Double = 0
+    @Published private(set) var isLevel: Bool = true
     @Published private(set) var isMonitoring = false
 
     private let locationManager = CLLocationManager()
     private let altimeter = CMAltimeter()
+    private let motionManager = CMMotionManager()
     private let sensorQueue: OperationQueue = {
         let queue = OperationQueue()
         queue.name = "com.goodcraft.AltiPin.dashboard"
@@ -62,6 +66,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         locationManager.startUpdatingHeading()
         startAltimeter()
         startDurationTimer()
+        startDeviceMotion()
     }
 
     func stopMonitoring() {
@@ -71,8 +76,14 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         locationManager.stopUpdatingLocation()
         locationManager.stopUpdatingHeading()
         altimeter.stopRelativeAltitudeUpdates()
+        motionManager.stopDeviceMotionUpdates()
         durationTimer?.invalidate()
         durationTimer = nil
+    }
+
+    var currentLocation: CLLocation? {
+        guard horizontalAccuracy >= 0 else { return nil }
+        return CLLocation(latitude: latitude, longitude: longitude)
     }
 
     var compassDirectionName: String {
@@ -123,6 +134,25 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self, let start = self.sessionStartDate else { return }
                 self.sessionDuration = Date().timeIntervalSince(start)
+            }
+        }
+    }
+
+    private func startDeviceMotion() {
+        guard motionManager.isDeviceMotionAvailable else { return }
+
+        motionManager.deviceMotionUpdateInterval = 1.0 / 30.0
+        motionManager.startDeviceMotionUpdates(to: sensorQueue) { [weak self] motion, _ in
+            guard let motion else { return }
+            let roll = motion.attitude.roll
+            let pitch = motion.attitude.pitch
+
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let maxTilt = 0.35
+                self.levelOffsetX = max(-1, min(1, roll / maxTilt))
+                self.levelOffsetY = max(-1, min(1, pitch / maxTilt))
+                self.isLevel = abs(roll) < 0.05 && abs(pitch) < 0.05
             }
         }
     }
