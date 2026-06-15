@@ -97,22 +97,15 @@ struct CompassDialView: View {
     }
 
     private var levelBubbleCluster: some View {
-        let x = levelOffsetX * levelTravel
-        let y = levelOffsetY * levelTravel
-
-        return ZStack {
-            ForEach(0..<3, id: \.self) { index in
-                Circle()
-                    .fill(Color.orange)
-                    .frame(width: 8, height: 8)
-                    .offset(
-                        x: x + CGFloat(index - 1) * 3,
-                        y: y + CGFloat(index - 1) * 2
-                    )
-            }
-        }
-        .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.82), value: levelOffsetX)
-        .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.82), value: levelOffsetY)
+        Circle()
+            .fill(Color.orange.opacity(0.7))
+            .frame(width: 8, height: 8)
+            .offset(
+                x: levelOffsetX * levelTravel,
+                y: levelOffsetY * levelTravel
+            )
+            .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.82), value: levelOffsetX)
+            .animation(.interactiveSpring(response: 0.25, dampingFraction: 0.82), value: levelOffsetY)
     }
 
     // MARK: - Helpers
