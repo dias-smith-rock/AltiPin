@@ -61,7 +61,6 @@ struct CompassDialView: View {
             Image(systemName: "triangle.fill")
                 .font(.system(size: 10))
                 .foregroundStyle(.red)
-                .rotationEffect(.degrees(180))
                 .offset(y: -innerRadius + 8)
         }
         .rotationEffect(.degrees(-heading))

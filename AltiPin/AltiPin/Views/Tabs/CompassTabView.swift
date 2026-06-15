@@ -78,10 +78,16 @@ struct CompassTabView: View {
             HStack(spacing: 6) {
                 Image(systemName: weatherService.conditionSymbol)
                     .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.85))
-                Text(weatherHeaderText)
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.85))
+                    .symbolRenderingMode(.multicolor)
+                    .contentTransition(.symbolEffect(.replace))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(weatherService.localityName)
+                        .font(.subheadline)
+                        .foregroundStyle(.white.opacity(0.85))
+                    Text(temperatureText)
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.65))
+                }
             }
 
             Spacer()
@@ -96,11 +102,9 @@ struct CompassTabView: View {
         }
     }
 
-    private var weatherHeaderText: String {
-        if let temp = weatherService.temperatureCelsius {
-            return "\(weatherService.localityName) \(Int(temp.rounded()))°C"
-        }
-        return weatherService.localityName
+    private var temperatureText: String {
+        guard let temp = weatherService.temperatureCelsius else { return "—" }
+        return "\(Int(temp.rounded()))°C"
     }
 
     // MARK: - Heading
