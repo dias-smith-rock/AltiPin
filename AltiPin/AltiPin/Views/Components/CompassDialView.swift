@@ -42,7 +42,7 @@ struct CompassDialView: View {
                 Text("\(Int(angle))")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundStyle(.white.opacity(0.85))
-                    .offset(y: -outerRadius + 14)
+                    .offset(y: -outerRadius - 20)
                     .rotationEffect(.degrees(angle))
             }
 
@@ -127,10 +127,10 @@ struct CompassDialView: View {
         Rectangle()
             .fill(Color.white.opacity(isMajor ? 0.9 : (isMedium ? 0.55 : 0.25)))
             .frame(
-                width: isMajor ? 1.5 : 1,
-                height: isMajor ? 16 : (isMedium ? 10 : 5)
+                width: isMajor ? 2 : 1,
+                height: isMajor ? 10 : (isMedium ? 10 : 5)
             )
-            .offset(y: -outerRadius + (isMajor ? 8 : 4))
+            .offset(y: -outerRadius + 4)
             .rotationEffect(.degrees(Double(degree)))
     }
 }
