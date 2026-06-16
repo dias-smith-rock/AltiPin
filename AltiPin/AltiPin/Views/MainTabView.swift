@@ -8,15 +8,16 @@ import SwiftData
 
 struct MainTabView: View {
     @StateObject private var store = OutdoorDashboardStore()
+    @StateObject private var weatherService = CompassWeatherService()
 
     var body: some View {
         TabView {
-            CompassTabView(store: store)
+            CompassTabView(store: store, weatherService: weatherService)
                 .tabItem {
                     Label("指南针", systemImage: "location.north.line.fill")
                 }
 
-            AltitudeTabView(store: store)
+            AltitudeTabView(store: store, weatherService: weatherService)
                 .tabItem {
                     Label("海拔", systemImage: "mountain.2.fill")
                 }

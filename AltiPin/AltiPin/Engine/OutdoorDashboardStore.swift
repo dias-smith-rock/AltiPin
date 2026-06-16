@@ -24,6 +24,10 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var levelOffsetY: Double = 0
     @Published private(set) var isLevel: Bool = true
     @Published private(set) var isMonitoring = false
+    @Published private(set) var magneticFieldX: Double = 0
+    @Published private(set) var magneticFieldY: Double = 0
+    @Published private(set) var magneticFieldZ: Double = 0
+    @Published private(set) var magneticFieldStrength: Double = 0
 
     private let locationManager = CLLocationManager()
     private let altimeter = CMAltimeter()
@@ -40,6 +44,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private var lastDistanceSample: CLLocation?
     private var sessionStartDate: Date?
     private var durationTimer: Timer?
+    private var lastMagneticFieldUpdateDate: Date?
+    private let magneticFieldUpdateInterval: TimeInterval = 0.5
 
     override init() {
         super.init()
@@ -67,6 +73,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         startAltimeter()
         startDurationTimer()
         startDeviceMotion()
+        startMagnetometer()
     }
 
     func stopMonitoring() {
@@ -77,6 +84,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         locationManager.stopUpdatingHeading()
         altimeter.stopRelativeAltitudeUpdates()
         motionManager.stopDeviceMotionUpdates()
+        motionManager.stopMagnetometerUpdates()
         durationTimer?.invalidate()
         durationTimer = nil
     }
@@ -92,6 +100,14 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
 
     var coordinateDMSString: String {
         Self.formatCoordinateDMS(latitude: latitude, longitude: longitude)
+    }
+
+    var longitudeDMS: String {
+        Self.dmsValue(value: longitude)
+    }
+
+    var latitudeDMS: String {
+        Self.dmsValue(value: latitude)
     }
 
     var coordinateDecimalString: String {
@@ -142,10 +158,12 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         guard motionManager.isDeviceMotionAvailable else { return }
 
         motionManager.deviceMotionUpdateInterval = 1.0 / 30.0
-        motionManager.startDeviceMotionUpdates(to: sensorQueue) { [weak self] motion, _ in
+        motionManager.startDeviceMotionUpdates(using: .xArbitraryCorrectedZVertical, to: sensorQueue) { [weak self] motion, _ in
             guard let motion else { return }
             let roll = motion.attitude.roll
             let pitch = motion.attitude.pitch
+            let field = motion.magneticField.field
+            let fieldAccuracy = motion.magneticField.accuracy
 
             Task { @MainActor [weak self] in
                 guard let self else { return }
@@ -153,8 +171,40 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
                 self.levelOffsetX = max(-1, min(1, roll / maxTilt))
                 self.levelOffsetY = max(-1, min(1, pitch / maxTilt))
                 self.isLevel = abs(roll) < 0.05 && abs(pitch) < 0.05
+
+                if fieldAccuracy != .uncalibrated {
+                    self.updateMagneticField(x: field.x, y: field.y, z: field.z)
+                }
             }
         }
+    }
+
+    private func startMagnetometer() {
+        guard motionManager.isMagnetometerAvailable else { return }
+
+        motionManager.magnetometerUpdateInterval = magneticFieldUpdateInterval
+        motionManager.startMagnetometerUpdates(to: sensorQueue) { [weak self] data, error in
+            guard let data, error == nil else { return }
+            let field = data.magneticField
+
+            Task { @MainActor [weak self] in
+                self?.updateMagneticField(x: field.x, y: field.y, z: field.z)
+            }
+        }
+    }
+
+    private func updateMagneticField(x: Double, y: Double, z: Double) {
+        let now = Date()
+        if let last = lastMagneticFieldUpdateDate,
+           now.timeIntervalSince(last) < magneticFieldUpdateInterval {
+            return
+        }
+        lastMagneticFieldUpdateDate = now
+
+        magneticFieldX = x
+        magneticFieldY = y
+        magneticFieldZ = z
+        magneticFieldStrength = sqrt(x * x + y * y + z * z)
     }
 
     private func ingestLocation(_ location: CLLocation) {
@@ -209,6 +259,10 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         store.cumulativeDistanceMeters = 1200
         store.horizontalAccuracy = 5
         store.verticalAccuracy = 8
+        store.magneticFieldX = 22.5
+        store.magneticFieldY = -8.3
+        store.magneticFieldZ = 41.2
+        store.magneticFieldStrength = 47.8
         return store
     }
 
@@ -221,6 +275,15 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         let label = value >= 0 ? positiveLabel : negativeLabel
         return "\(label) \(degrees)°\(minutes)'\(seconds)\""
     }
+
+    private static func dmsValue(value: Double) -> String {
+        let absolute = abs(value)
+        let degrees = Int(absolute)
+        let minutesDecimal = (absolute - Double(degrees)) * 60
+        let minutes = Int(minutesDecimal)
+        let seconds = Int((minutesDecimal - Double(minutes)) * 60)
+        return "\(degrees)°\(minutes)'\(seconds)\""
+    }
 }
 
 // MARK: - CLLocationManagerDelegate
@@ -230,6 +293,10 @@ extension OutdoorDashboardStore: CLLocationManagerDelegate {
         let value = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magneticHeading
         Task { @MainActor in
             self.heading = value
+            // CLHeading 也提供磁力计原始读数（μT），作为补充来源
+            if newHeading.x != 0 || newHeading.y != 0 || newHeading.z != 0 {
+                self.updateMagneticField(x: newHeading.x, y: newHeading.y, z: newHeading.z)
+            }
         }
     }
 

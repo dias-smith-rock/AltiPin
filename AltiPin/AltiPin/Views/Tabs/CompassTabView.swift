@@ -17,7 +17,7 @@ private final class MajorTickHaptic {
 
 struct CompassTabView: View {
     @ObservedObject var store: OutdoorDashboardStore
-    @StateObject private var weatherService = CompassWeatherService()
+    @ObservedObject var weatherService: CompassWeatherService
 
     @State private var heading: Double = 0
     @State private var showSettings = false
@@ -212,5 +212,8 @@ struct CompassTabView: View {
 }
 
 #Preview {
-    CompassTabView(store: OutdoorDashboardStore.preview())
+    CompassTabView(
+        store: OutdoorDashboardStore.preview(),
+        weatherService: CompassWeatherService()
+    )
 }

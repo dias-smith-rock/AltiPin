@@ -12,7 +12,13 @@ import WeatherKit
 final class CompassWeatherService: ObservableObject {
     @Published private(set) var localityName: String = "—"
     @Published private(set) var temperatureCelsius: Double?
+    @Published private(set) var apparentTemperatureCelsius: Double?
+    @Published private(set) var humidityPercent: Double?
+    @Published private(set) var windSpeedKmh: Double?
+    @Published private(set) var windDirectionDegrees: Double?
     @Published private(set) var windDirectionName: String = "—"
+    @Published private(set) var windLevel: Int?
+    @Published private(set) var conditionName: String = "—"
     @Published private(set) var conditionSymbol: String = "cloud"
 
     private let weatherService = WeatherService.shared
@@ -74,14 +80,28 @@ final class CompassWeatherService: ObservableObject {
         }
     }
 
+    private func applyWind(speedMS: Double, directionDegrees: Double) {
+        let kmh = speedMS * 3.6
+        windSpeedKmh = kmh
+        windDirectionDegrees = directionDegrees
+        windDirectionName = Self.windDirectionName(for: directionDegrees)
+        windLevel = AltitudeCalculations.windLevel(kmh: kmh)
+    }
+
     private func refreshWeatherKit(for location: CLLocation) async -> Bool {
         do {
             let weather = try await weatherService.weather(for: location)
             let current = weather.currentWeather
 
             temperatureCelsius = current.temperature.converted(to: .celsius).value
-            windDirectionName = Self.windDirectionName(for: current.wind.direction.value)
+            apparentTemperatureCelsius = current.apparentTemperature.converted(to: .celsius).value
+            humidityPercent = current.humidity * 100
+            applyWind(
+                speedMS: current.wind.speed.converted(to: .metersPerSecond).value,
+                directionDegrees: current.wind.direction.value
+            )
             conditionSymbol = current.symbolName
+            conditionName = Self.conditionName(for: current.condition)
             return true
         } catch {
             NSLog("CompassWeatherService: WeatherKit failed — \(error.localizedDescription)")
@@ -95,7 +115,10 @@ final class CompassWeatherService: ObservableObject {
         components.queryItems = [
             URLQueryItem(name: "latitude", value: String(coordinate.latitude)),
             URLQueryItem(name: "longitude", value: String(coordinate.longitude)),
-            URLQueryItem(name: "current", value: "temperature_2m,weather_code,wind_direction_10m"),
+            URLQueryItem(
+                name: "current",
+                value: "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_direction_10m,wind_speed_10m"
+            ),
             URLQueryItem(name: "timezone", value: "auto"),
         ]
 
@@ -111,10 +134,16 @@ final class CompassWeatherService: ObservableObject {
             guard let current = payload.current else { return false }
 
             temperatureCelsius = current.temperature2m
-            if let windDirection = current.windDirection10m {
+            apparentTemperatureCelsius = current.apparentTemperature2m
+            humidityPercent = current.relativeHumidity2m
+            if let windDirection = current.windDirection10m, let windSpeed = current.windSpeed10m {
+                windSpeedKmh = windSpeed
+                windDirectionDegrees = windDirection
                 windDirectionName = Self.windDirectionName(for: windDirection)
+                windLevel = AltitudeCalculations.windLevel(kmh: windSpeed)
             }
             conditionSymbol = Self.symbol(forWeatherCode: current.weatherCode)
+            conditionName = AltitudeCalculations.conditionName(forWeatherCode: current.weatherCode)
             NSLog("CompassWeatherService: using Open-Meteo fallback")
             return true
         } catch {
@@ -150,6 +179,39 @@ final class CompassWeatherService: ObservableObject {
         let index = Int((normalized + 22.5) / 45) % 8
         return names[index]
     }
+
+    static func conditionName(for condition: WeatherCondition) -> String {
+        switch condition {
+        case .clear, .mostlyClear, .hot:
+            return "晴"
+        case .partlyCloudy:
+            return "多云"
+        case .mostlyCloudy, .cloudy:
+            return "阴"
+        case .rain, .heavyRain, .drizzle, .sunShowers:
+            return "小雨"
+        case .thunderstorms, .isolatedThunderstorms, .scatteredThunderstorms, .strongStorms:
+            return "雷雨"
+        case .snow, .heavySnow, .flurries, .sunFlurries, .blizzard, .blowingSnow, .sleet, .freezingRain, .wintryMix:
+            return "雪"
+        case .foggy, .haze, .smoky:
+            return "雾"
+        case .windy, .breezy:
+            return "大风"
+        case .hail:
+            return "冰雹"
+        case .freezingDrizzle:
+            return "冻雨"
+        case .tropicalStorm, .hurricane:
+            return "风暴"
+        case .frigid:
+            return "严寒"
+        case .blowingDust:
+            return "沙尘"
+        @unknown default:
+            return "未知"
+        }
+    }
 }
 
 // MARK: - Open-Meteo
@@ -160,12 +222,18 @@ private struct OpenMeteoResponse: Decodable {
 
 private struct OpenMeteoCurrent: Decodable {
     let temperature2m: Double
+    let apparentTemperature2m: Double?
+    let relativeHumidity2m: Double?
     let weatherCode: Int
     let windDirection10m: Double?
+    let windSpeed10m: Double?
 
     enum CodingKeys: String, CodingKey {
         case temperature2m = "temperature_2m"
+        case apparentTemperature2m = "apparent_temperature"
+        case relativeHumidity2m = "relative_humidity_2m"
         case weatherCode = "weather_code"
         case windDirection10m = "wind_direction_10m"
+        case windSpeed10m = "wind_speed_10m"
     }
 }
