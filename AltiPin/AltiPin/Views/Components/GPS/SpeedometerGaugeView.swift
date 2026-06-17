@@ -46,7 +46,7 @@ struct SpeedometerGaugeView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 6) {
             gaugeFace
             speedReadout
         }
@@ -183,15 +183,15 @@ struct SpeedometerGaugeView: View {
     // MARK: - Speed Readout
 
     private var speedReadout: some View {
-        VStack(spacing: 4) {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(clampedSpeed, format: .number.precision(.fractionLength(2)))
-                .font(.system(size: 56, weight: .thin, design: .rounded))
+                .font(.system(size: 40, weight: .thin, design: .rounded))
                 .foregroundStyle(.white)
                 .contentTransition(.numericText())
                 .animation(.easeOut(duration: 0.25), value: clampedSpeed)
 
             Text("km/h")
-                .font(.subheadline)
+                .font(.system(size: 16, weight: .regular))
                 .foregroundStyle(.gray)
         }
     }
@@ -217,10 +217,10 @@ struct SpeedometerGaugeView: View {
 private struct GaugeLayout {
     let size: CGFloat
 
-    var diameter: CGFloat { size * 0.92 }
+    var diameter: CGFloat { size * 0.98 }
     var trackWidth: CGFloat { size * 0.028 }
-    var tickRadius: CGFloat { size * 0.36 }
-    var labelRadius: CGFloat { size * 0.28 }
+    var tickRadius: CGFloat { size * 0.38 }
+    var labelRadius: CGFloat { size * 0.295 }
     var majorTickLength: CGFloat { size * 0.045 }
     var minorTickLength: CGFloat { size * 0.024 }
     var majorTickWidth: CGFloat { max(1.5, size * 0.0045) }

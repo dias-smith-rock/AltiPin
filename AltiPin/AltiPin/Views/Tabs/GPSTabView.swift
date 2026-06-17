@@ -16,27 +16,39 @@ struct GPSTabView: View {
         SpeedometerMode(rawValue: selectedModeRawValue) ?? .driving
     }
 
+    private var hasSessionStats: Bool {
+        store.isSpeedSessionActive
+            || store.speedSessionDuration > 0
+            || store.speedSessionDistanceMeters > 0
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             gpsHeader
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
-                .padding(.bottom, 12)
+                .padding(.bottom, 10)
 
             modePicker
                 .padding(.horizontal, 16)
-                .padding(.bottom, 12)
+                .padding(.bottom, 8)
 
             SpeedometerGaugeView(
                 currentSpeed: store.speedKmh,
                 maxSpeed: selectedMode.maxSpeed,
                 majorTickInterval: selectedMode.majorTickInterval
             )
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 4)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .layoutPriority(2)
             .animation(.easeOut(duration: 0.25), value: selectedModeRawValue)
 
-            gpsFooter
+            sessionControlButton
+                .padding(.horizontal, 16)
+                .padding(.top, 4)
+                .padding(.bottom, 10)
+
+            sessionStatsPanel
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
         }
@@ -46,10 +58,30 @@ struct GPSTabView: View {
     // MARK: - Header
 
     private var gpsHeader: some View {
-        HStack {
+        HStack(spacing: 10) {
             Text("GPS测速")
                 .font(.headline)
                 .foregroundStyle(.white.opacity(0.9))
+
+            if store.isSpeedSessionActive {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 7, height: 7)
+                        .opacity(store.isSpeedSessionActive ? 1 : 0)
+                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: store.isSpeedSessionActive)
+
+                    Text("测速中")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.red.opacity(0.9))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.red.opacity(0.12))
+                )
+            }
 
             Spacer()
 
@@ -67,6 +99,8 @@ struct GPSTabView: View {
                 modeButton(for: mode)
             }
         }
+        .disabled(store.isSpeedSessionActive)
+        .opacity(store.isSpeedSessionActive ? 0.45 : 1)
     }
 
     private func modeButton(for mode: SpeedometerMode) -> some View {
@@ -77,22 +111,22 @@ struct GPSTabView: View {
             UISelectionFeedbackGenerator().selectionChanged()
             selectedModeRawValue = mode.rawValue
         } label: {
-            VStack(spacing: 6) {
+            VStack(spacing: 5) {
                 Image(systemName: mode.icon)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
 
                 Text(mode.title)
                     .font(.caption2.weight(.medium))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
+            .padding(.vertical, 8)
             .foregroundStyle(isSelected ? .white : .white.opacity(0.55))
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .fill(isSelected ? AltitudeTheme.accent.opacity(0.22) : Color.white.opacity(0.05))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(
                         isSelected ? AltitudeTheme.accent.opacity(0.85) : Color.white.opacity(0.08),
                         lineWidth: isSelected ? 1.5 : 1
@@ -104,42 +138,130 @@ struct GPSTabView: View {
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 
-    // MARK: - Footer
+    // MARK: - Session Control
 
-    private var gpsFooter: some View {
-        HStack(spacing: 12) {
-            accuracyCard(
-                title: "水平精度",
-                value: store.horizontalAccuracy,
-                icon: "arrow.left.and.right"
+    private var sessionControlButton: some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            store.toggleSpeedSession()
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: store.isSpeedSessionActive ? "stop.fill" : "play.fill")
+                    .font(.body.weight(.semibold))
+
+                Text(store.isSpeedSessionActive ? "停止测速" : "开始测速")
+                    .font(.headline.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .foregroundStyle(.white)
+            .background(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(
+                        store.isSpeedSessionActive
+                            ? Color.red.opacity(0.88)
+                            : AltitudeTheme.accent.opacity(0.92)
+                    )
             )
-            accuracyCard(
-                title: "垂直精度",
-                value: store.verticalAccuracy,
-                icon: "arrow.up.and.down"
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
             )
         }
+        .buttonStyle(.plain)
+        .accessibilityLabel(store.isSpeedSessionActive ? "停止测速" : "开始测速")
     }
 
-    @ViewBuilder
-    private func accuracyCard(title: String, value: Double, icon: String) -> some View {
-        OLEDMetricCard(title: title, icon: icon) {
-            if value >= 0 {
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    Text("±")
-                    Text(value, format: .number.precision(.fractionLength(0)))
-                    Text(" m")
-                        .font(.system(.title3, design: .monospaced))
-                        .foregroundStyle(.gray)
+    // MARK: - Session Stats
+
+    private var sessionStatsPanel: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("本次测速")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.white.opacity(0.45))
+
+                Spacer()
+
+                if hasSessionStats {
+                    Text(durationText(store.speedSessionDuration))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(store.isSpeedSessionActive ? AltitudeTheme.accent : .white.opacity(0.55))
                 }
-            } else {
-                Text("—")
-                    .foregroundStyle(.gray)
             }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 4)
+
+            AltitudeMetricGrid(
+                items: [
+                    AltitudeMetricItem(label: "时长", value: statDurationText),
+                    AltitudeMetricItem(label: "平均速度", value: statAverageSpeedText),
+                    AltitudeMetricItem(label: "路程", value: statDistanceText),
+                    AltitudeMetricItem(label: "最大速度", value: statMaxSpeedText),
+                    AltitudeMetricItem(label: "累计爬升", value: statElevationGainText),
+                ],
+                columns: 3
+            )
         }
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.white.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private var statDurationText: String {
+        guard hasSessionStats else { return "—" }
+        return durationText(store.speedSessionDuration)
+    }
+
+    private var statAverageSpeedText: String {
+        guard hasSessionStats, store.speedSessionAverageSpeedKmh > 0 else { return "—" }
+        return String(format: "%.1fkm/h", store.speedSessionAverageSpeedKmh)
+    }
+
+    private var statDistanceText: String {
+        guard hasSessionStats, store.speedSessionDistanceMeters > 0 else {
+            return hasSessionStats ? "0m" : "—"
+        }
+        if store.speedSessionDistanceMeters >= 1000 {
+            return String(format: "%.2fkm", store.speedSessionDistanceMeters / 1000)
+        }
+        return String(format: "%.0fm", store.speedSessionDistanceMeters)
+    }
+
+    private var statMaxSpeedText: String {
+        guard hasSessionStats, store.speedSessionMaxSpeedKmh > 0 else { return "—" }
+        return String(format: "%.1fkm/h", store.speedSessionMaxSpeedKmh)
+    }
+
+    private var statElevationGainText: String {
+        guard hasSessionStats, store.speedSessionElevationGainMeters > 0 else {
+            return hasSessionStats ? "0m" : "—"
+        }
+        return String(format: "%.0fm", store.speedSessionElevationGainMeters)
+    }
+
+    private func durationText(_ interval: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(interval.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 
-#Preview {
+#Preview("Active Session") {
     GPSTabView(store: OutdoorDashboardStore.preview())
+}
+
+#Preview("Idle") {
+    GPSTabView(store: OutdoorDashboardStore.previewIdle())
 }

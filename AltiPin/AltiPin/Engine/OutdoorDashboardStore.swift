@@ -29,6 +29,19 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var magneticFieldZ: Double = 0
     @Published private(set) var magneticFieldStrength: Double = 0
 
+    @Published private(set) var isSpeedSessionActive = false
+    @Published private(set) var speedSessionDuration: TimeInterval = 0
+    @Published private(set) var speedSessionDistanceMeters: Double = 0
+    @Published private(set) var speedSessionMaxSpeedKmh: Double = 0
+    @Published private(set) var speedSessionElevationGainMeters: Double = 0
+
+    var speedSessionAverageSpeedKmh: Double {
+        guard speedSessionDuration > 0 else { return 0 }
+        let hours = speedSessionDuration / 3600
+        guard hours > 0 else { return 0 }
+        return (speedSessionDistanceMeters / 1000) / hours
+    }
+
     private let locationManager = CLLocationManager()
     private let altimeter = CMAltimeter()
     private let motionManager = CMMotionManager()
@@ -46,6 +59,10 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private var durationTimer: Timer?
     private var lastMagneticFieldUpdateDate: Date?
     private let magneticFieldUpdateInterval: TimeInterval = 0.5
+
+    private var speedSessionStartDate: Date?
+    private var speedSessionLastSample: CLLocation?
+    private var speedSessionTimer: Timer?
 
     override init() {
         super.init()
@@ -79,6 +96,10 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     func stopMonitoring() {
         guard isMonitoring else { return }
 
+        if isSpeedSessionActive {
+            stopSpeedSession()
+        }
+
         isMonitoring = false
         locationManager.stopUpdatingLocation()
         locationManager.stopUpdatingHeading()
@@ -87,6 +108,38 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         motionManager.stopMagnetometerUpdates()
         durationTimer?.invalidate()
         durationTimer = nil
+    }
+
+    func startSpeedSession() {
+        guard !isSpeedSessionActive else { return }
+
+        isSpeedSessionActive = true
+        speedSessionDuration = 0
+        speedSessionDistanceMeters = 0
+        speedSessionMaxSpeedKmh = 0
+        speedSessionElevationGainMeters = 0
+        speedSessionStartDate = .now
+        speedSessionLastSample = nil
+
+        startSpeedSessionTimer()
+    }
+
+    func stopSpeedSession() {
+        guard isSpeedSessionActive else { return }
+
+        isSpeedSessionActive = false
+        speedSessionTimer?.invalidate()
+        speedSessionTimer = nil
+        speedSessionStartDate = nil
+        speedSessionLastSample = nil
+    }
+
+    func toggleSpeedSession() {
+        if isSpeedSessionActive {
+            stopSpeedSession()
+        } else {
+            startSpeedSession()
+        }
     }
 
     var currentLocation: CLLocation? {
@@ -150,6 +203,16 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
             Task { @MainActor [weak self] in
                 guard let self, let start = self.sessionStartDate else { return }
                 self.sessionDuration = Date().timeIntervalSince(start)
+            }
+        }
+    }
+
+    private func startSpeedSessionTimer() {
+        speedSessionTimer?.invalidate()
+        speedSessionTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self, let start = self.speedSessionStartDate else { return }
+                self.speedSessionDuration = Date().timeIntervalSince(start)
             }
         }
     }
@@ -232,6 +295,38 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         if location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 {
             lastDistanceSample = location
         }
+
+        if isSpeedSessionActive {
+            ingestSpeedSessionSample(location)
+        }
+    }
+
+    private func ingestSpeedSessionSample(_ location: CLLocation) {
+        let currentSpeed = location.speed >= 0 ? location.speed * 3.6 : speedKmh
+        if currentSpeed > speedSessionMaxSpeedKmh {
+            speedSessionMaxSpeedKmh = currentSpeed
+        }
+
+        guard let last = speedSessionLastSample,
+              location.horizontalAccuracy >= 0,
+              location.horizontalAccuracy <= 40 else {
+            if location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 {
+                speedSessionLastSample = location
+            }
+            return
+        }
+
+        let horizontalDelta = location.distance(from: last)
+        if horizontalDelta >= 2 {
+            speedSessionDistanceMeters += horizontalDelta
+
+            let elevationDelta = location.altitude - last.altitude
+            if elevationDelta > 0 {
+                speedSessionElevationGainMeters += elevationDelta
+            }
+        }
+
+        speedSessionLastSample = location
     }
 
     static func directionName(for degrees: Double) -> String {
@@ -263,6 +358,17 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         store.magneticFieldY = -8.3
         store.magneticFieldZ = 41.2
         store.magneticFieldStrength = 47.8
+        store.isSpeedSessionActive = true
+        store.speedSessionDuration = 129
+        store.speedSessionDistanceMeters = 540
+        store.speedSessionMaxSpeedKmh = 7.9
+        store.speedSessionElevationGainMeters = 12.4
+        return store
+    }
+
+    static func previewIdle() -> OutdoorDashboardStore {
+        let store = preview()
+        store.stopSpeedSession()
         return store
     }
 
