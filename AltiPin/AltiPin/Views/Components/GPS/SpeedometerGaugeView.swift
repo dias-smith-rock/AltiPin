@@ -11,7 +11,6 @@ struct SpeedometerGaugeView: View {
     let majorTickInterval: Double
 
     private let arcSpanDegrees: Double = 270
-    private let arcStartDegrees: Double = 135
 
     private var clampedSpeed: Double {
         guard maxSpeed > 0 else { return 0 }
@@ -64,7 +63,7 @@ struct SpeedometerGaugeView: View {
             let layout = GaugeLayout(size: size)
 
             ZStack {
-                trackArc(layout: layout, progress: 1)
+                trackArc(layout: layout)
                 progressArc(layout: layout)
                 minorTicks(layout: layout)
                 majorTicks(layout: layout)
@@ -77,39 +76,39 @@ struct SpeedometerGaugeView: View {
         .aspectRatio(1, contentMode: .fit)
     }
 
-    private func trackArc(layout: GaugeLayout, progress: Double) -> some View {
-        GaugeArc(progress: progress)
+    private func trackArc(layout: GaugeLayout) -> some View {
+        Circle()
+            .trim(from: 0, to: layout.arcTrimEnd)
             .stroke(
                 AngularGradient(
                     gradient: Gradient(colors: [
-                        Color.white.opacity(0.06),
+                        Color.white.opacity(0.08),
                         Color.white.opacity(0.14),
-                        Color.white.opacity(0.06),
+                        Color.white.opacity(0.08),
                     ]),
-                    center: .center,
-                    startAngle: .degrees(layout.swiftStartAngle),
-                    endAngle: .degrees(layout.swiftEndAngle)
+                    center: .center
                 ),
                 style: StrokeStyle(lineWidth: layout.trackWidth, lineCap: .round)
             )
+            .rotationEffect(.degrees(layout.arcRotation))
             .frame(width: layout.diameter, height: layout.diameter)
     }
 
     private func progressArc(layout: GaugeLayout) -> some View {
-        GaugeArc(progress: speedProgress)
+        Circle()
+            .trim(from: 0, to: layout.arcTrimEnd * speedProgress)
             .stroke(
                 AngularGradient(
                     gradient: Gradient(colors: [
-                        Color(red: 0.95, green: 0.55, blue: 0.12).opacity(0.35),
-                        Color(red: 0.95, green: 0.55, blue: 0.12),
-                        Color(red: 0.98, green: 0.72, blue: 0.18),
+                        AltitudeTheme.accent.opacity(0.45),
+                        AltitudeTheme.accent,
+                        AltitudeTheme.chartLine,
                     ]),
-                    center: .center,
-                    startAngle: .degrees(layout.swiftStartAngle),
-                    endAngle: .degrees(layout.swiftEndAngle)
+                    center: .center
                 ),
                 style: StrokeStyle(lineWidth: layout.trackWidth, lineCap: .round)
             )
+            .rotationEffect(.degrees(layout.arcRotation))
             .frame(width: layout.diameter, height: layout.diameter)
             .animation(.easeOut(duration: 0.25), value: clampedSpeed)
     }
@@ -231,37 +230,11 @@ private struct GaugeLayout {
     var needleWidth: CGFloat { max(1.5, size * 0.006) }
     var hubSize: CGFloat { size * 0.028 }
 
-    var swiftStartAngle: Double { 135 - 90 }
-    var swiftEndAngle: Double { 135 + 270 - 90 }
-}
+    /// 270° arc expressed as a trim fraction of a full circle.
+    var arcTrimEnd: CGFloat { 270.0 / 360.0 }
 
-// MARK: - Arc Shape
-
-private struct GaugeArc: Shape {
-    var progress: Double
-
-    var animatableData: Double {
-        get { progress }
-        set { progress = newValue }
-    }
-
-    func path(in rect: CGRect) -> Path {
-        let clampedProgress = min(max(progress, 0), 1)
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let radius = min(rect.width, rect.height) / 2
-        let startAngle = Angle.degrees(135 - 90)
-        let endAngle = Angle.degrees(135 - 90 + 270 * clampedProgress)
-
-        var path = Path()
-        path.addArc(
-            center: center,
-            radius: radius,
-            startAngle: startAngle,
-            endAngle: endAngle,
-            clockwise: true
-        )
-        return path
-    }
+    /// Rotate trimmed circle so speed 0 starts at the bottom-left (135° clock position).
+    var arcRotation: Double { 135.0 }
 }
 
 // MARK: - Previews
