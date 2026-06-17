@@ -74,6 +74,7 @@ enum TeamRelayEvents {
 
 @MainActor
 protocol TeamRelayClient: AnyObject {
+    var lastError: String? { get }
     var onMemberUpdate: ((String, TeamLocationPayload) -> Void)? { get set }
     var onMemberJoined: ((String) -> Void)? { get set }
     var onMemberLeft: ((String) -> Void)? { get set }
@@ -85,6 +86,8 @@ protocol TeamRelayClient: AnyObject {
 }
 
 extension TeamRelayClient {
+    var lastError: String? { nil }
+
     var onConnectionStateChange: ((TeamConnectionState) -> Void)? {
         get { nil }
         set { _ = newValue }

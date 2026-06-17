@@ -19,18 +19,7 @@ struct GroupTrackMapView: View {
     }
 
     private var displayPoints: [HistoryPoint] {
-        if !selfFallbackPoints.isEmpty {
-            return Array(selfFallbackPoints.suffix(20))
-        }
-        #if DEBUG
-        #if targetEnvironment(simulator)
-        return HistoryPoint.mockPoints
-        #else
-        return []
-        #endif
-        #else
-        return []
-        #endif
+        Array(selfFallbackPoints.suffix(20))
     }
 
     var body: some View {

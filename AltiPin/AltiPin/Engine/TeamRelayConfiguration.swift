@@ -9,42 +9,13 @@ enum TeamRelayConfiguration {
     static let broadcastEvent = "broadcast_update"
     static let locationUpdateInterval: TimeInterval = 4
 
-    static var useMockRelay: Bool {
-        if ProcessInfo.processInfo.environment["USE_MOCK_TEAM_RELAY"] == "1" {
-            return true
-        }
-
-        #if DEBUG
-        if !isSupabaseConfigured {
-            return true
-        }
-        #else
-        if !isSupabaseConfigured {
-            return false
-        }
-        #endif
-
-        return false
-    }
-
     static var isSupabaseConfigured: Bool {
-        guard let urlString = supabaseURLString,
-              let key = supabaseAnonKey,
-              !urlString.isEmpty,
-              !key.isEmpty,
-              URL(string: urlString) != nil else {
-            return false
-        }
-        return true
+        supabaseURL != nil && supabaseAnonKey != nil
     }
 
     static var supabaseURL: URL? {
-        guard let urlString = supabaseURLString,
-              let url = URL(string: urlString),
-              !urlString.isEmpty else {
-            return nil
-        }
-        return url
+        guard let ref = projectRef, !ref.isEmpty else { return nil }
+        return URL(string: "https://\(ref).supabase.co")
     }
 
     static var supabaseAnonKey: String? {
@@ -54,21 +25,50 @@ enum TeamRelayConfiguration {
         return key
     }
 
+    static var projectRef: String? {
+        if let ref = resolvedProjectRef, !ref.isEmpty {
+            return ref
+        }
+
+        // 兼容旧版直接注入完整 URL 的配置
+        if let urlString = legacyURLString,
+           let host = URL(string: urlString)?.host,
+           host.hasSuffix(".supabase.co") {
+            return host.replacingOccurrences(of: ".supabase.co", with: "")
+        }
+
+        return nil
+    }
+
     static func channelTopic(roomID: String) -> String {
         "team:\(roomID)"
     }
 
-    private static var supabaseURLString: String? {
-        if let env = ProcessInfo.processInfo.environment["SUPABASE_URL"], !env.isEmpty {
-            return env
-        }
-        return Bundle.main.object(forInfoDictionaryKey: "SUPABASE_URL") as? String
+    private static var resolvedProjectRef: String? {
+        sanitizedConfigValue(for: "SUPABASE_PROJECT_REF")
     }
 
     private static var resolvedSupabaseAnonKey: String? {
-        if let env = ProcessInfo.processInfo.environment["SUPABASE_ANON_KEY"], !env.isEmpty {
-            return env
+        sanitizedConfigValue(for: "SUPABASE_ANON_KEY")
+    }
+
+    private static var legacyURLString: String? {
+        sanitizedConfigValue(for: "SUPABASE_URL")
+    }
+
+    private static func sanitizedConfigValue(for key: String) -> String? {
+        if let env = ProcessInfo.processInfo.environment[key], !env.isEmpty {
+            return clean(env)
         }
-        return Bundle.main.object(forInfoDictionaryKey: "SUPABASE_ANON_KEY") as? String
+        if let plist = Bundle.main.object(forInfoDictionaryKey: key) as? String, !plist.isEmpty {
+            return clean(plist)
+        }
+        return nil
+    }
+
+    private static func clean(_ value: String) -> String {
+        value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\""))
     }
 }

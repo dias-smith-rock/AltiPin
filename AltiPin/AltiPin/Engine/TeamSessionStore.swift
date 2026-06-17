@@ -69,12 +69,6 @@ final class TeamSessionStore: ObservableObject {
         let points = store.recentHistoryPoints
         if !points.isEmpty {
             members[index].recentPoints = Array(points.suffix(maxRecentPoints))
-        } else if members[index].recentPoints.isEmpty {
-            #if DEBUG
-            #if targetEnvironment(simulator)
-            members[index].recentPoints = HistoryPoint.mockPoints
-            #endif
-            #endif
         }
 
         if store.latitude != 0 || store.longitude != 0 {
@@ -119,16 +113,15 @@ final class TeamSessionStore: ObservableObject {
     // MARK: - Private
 
     private static func makeDefaultRelay() -> TeamRelayClient {
-        if TeamRelayConfiguration.useMockRelay {
-            return MockTeamRelay()
-        }
-        return SupabaseTeamRelay()
+        SupabaseTeamRelay()
     }
 
     private func joinRoom(code: String, nickname: String, isCreator: Bool) async {
         lastConnectionError = nil
         connectionState = .connecting
         roomCode = code
+
+        TeamRelayLogger.log("joinRoom 开始 code=\(code) nickname=\(nickname) isCreator=\(isCreator)")
 
         let selfMember = TeamMember(
             id: UUID(),
@@ -146,11 +139,17 @@ final class TeamSessionStore: ObservableObject {
 
         await relay.connect(roomCode: code, nickname: nickname)
 
+        TeamRelayLogger.log("joinRoom relay.connect 返回 connectionState=\(connectionState) relay.lastError=\(relay.lastError ?? "nil")")
+
         if connectionState != .connected {
-            lastConnectionError = TeamRelayConfiguration.isSupabaseConfigured
-                ? "无法连接组队服务，请检查网络后重试"
-                : "未配置 Supabase，请填写 Secrets.xcconfig"
+            lastConnectionError = relay.lastError
+                ?? (TeamRelayConfiguration.isSupabaseConfigured
+                    ? "无法连接组队服务，请检查网络后重试"
+                    : "Supabase 未正确配置，请检查 AltiPin.xcconfig 中的 SUPABASE_PROJECT_REF")
+            TeamRelayLogger.log("joinRoom 失败，即将 leaveRoom error=\(lastConnectionError ?? "nil")")
             leaveRoom()
+        } else {
+            TeamRelayLogger.log("joinRoom 成功 ✅ roomCode=\(roomCode ?? "nil") members=\(members.count)")
         }
 
         _ = isCreator
@@ -158,6 +157,7 @@ final class TeamSessionStore: ObservableObject {
 
     private func configureRelayHandlers() {
         relay.onConnectionStateChange = { [weak self] state in
+            TeamRelayLogger.log("connectionState 变更 -> \(state)")
             self?.connectionState = state
         }
 
