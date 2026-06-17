@@ -98,6 +98,10 @@ struct FaceToFaceTeamSheet: View {
             if isWorking {
                 ProgressView()
                     .tint(AltitudeTheme.accent)
+            } else if let errorMessage {
+                Text(errorMessage)
+                    .font(.caption)
+                    .foregroundStyle(.red.opacity(0.9))
             } else {
                 Text("等待队友加入…")
                     .font(.caption)
@@ -205,11 +209,15 @@ struct FaceToFaceTeamSheet: View {
 
     private func startCreate() async {
         isWorking = true
+        errorMessage = nil
         let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         let name = trimmed.isEmpty ? defaultNickname() : trimmed
         nickname = name
         await teamSession.createRoom(nickname: name)
         createdCode = teamSession.roomCode ?? ""
+        if teamSession.roomCode == nil {
+            errorMessage = teamSession.lastConnectionError ?? "创建队伍失败"
+        }
         isWorking = false
     }
 
@@ -225,7 +233,11 @@ struct FaceToFaceTeamSheet: View {
         nickname = name
         await teamSession.join(roomCode: joinCode, nickname: name)
         isWorking = false
-        dismiss()
+        if teamSession.isInRoom {
+            dismiss()
+        } else {
+            errorMessage = teamSession.lastConnectionError ?? "加入队伍失败"
+        }
     }
 
     private func defaultNickname() -> String {

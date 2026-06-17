@@ -11,6 +11,7 @@ final class MockTeamRelay: TeamRelayClient {
     var onMemberUpdate: ((String, TeamLocationPayload) -> Void)?
     var onMemberJoined: ((String) -> Void)?
     var onMemberLeft: ((String) -> Void)?
+    var onConnectionStateChange: ((TeamConnectionState) -> Void)?
 
     private var roomCode: String?
     private var nickname: String?
@@ -26,13 +27,16 @@ final class MockTeamRelay: TeamRelayClient {
     }
 
     func connect(roomCode: String, nickname: String) async {
+        onConnectionStateChange?(.connecting)
         self.roomCode = roomCode
         self.nickname = nickname
         seedMockMembers(roomCode: roomCode, excluding: nickname)
         startMockUpdates()
+        onConnectionStateChange?(.connected)
     }
 
     func disconnect() {
+        onConnectionStateChange?(.disconnected)
         mockTimer?.invalidate()
         mockTimer = nil
         mockMembers = []

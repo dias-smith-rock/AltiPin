@@ -13,13 +13,14 @@ final class TeamSessionStore: ObservableObject {
     @Published private(set) var members: [TeamMember] = []
     @Published var visibleMemberIDs: Set<UUID> = []
     @Published private(set) var connectionState: TeamConnectionState = .idle
+    @Published private(set) var lastConnectionError: String?
 
     private let relay: TeamRelayClient
     private let maxRecentPoints = 20
     private var selfMemberID: UUID?
 
     init() {
-        self.relay = MockTeamRelay()
+        self.relay = Self.makeDefaultRelay()
         configureRelayHandlers()
     }
 
@@ -58,6 +59,7 @@ final class TeamSessionStore: ObservableObject {
         visibleMemberIDs = []
         selfMemberID = nil
         connectionState = .idle
+        lastConnectionError = nil
     }
 
     func ingestSelfLocation(from store: OutdoorDashboardStore) {
@@ -116,7 +118,15 @@ final class TeamSessionStore: ObservableObject {
 
     // MARK: - Private
 
+    private static func makeDefaultRelay() -> TeamRelayClient {
+        if TeamRelayConfiguration.useMockRelay {
+            return MockTeamRelay()
+        }
+        return SupabaseTeamRelay()
+    }
+
     private func joinRoom(code: String, nickname: String, isCreator: Bool) async {
+        lastConnectionError = nil
         connectionState = .connecting
         roomCode = code
 
@@ -135,14 +145,24 @@ final class TeamSessionStore: ObservableObject {
         visibleMemberIDs = [selfMember.id]
 
         await relay.connect(roomCode: code, nickname: nickname)
-        connectionState = .connected
+
+        if connectionState != .connected {
+            lastConnectionError = TeamRelayConfiguration.isSupabaseConfigured
+                ? "无法连接组队服务，请检查网络后重试"
+                : "未配置 Supabase，请填写 Secrets.xcconfig"
+            leaveRoom()
+        }
 
         _ = isCreator
     }
 
     private func configureRelayHandlers() {
+        relay.onConnectionStateChange = { [weak self] state in
+            self?.connectionState = state
+        }
+
         relay.onMemberJoined = { [weak self] nickname in
-            self?.addMockMemberIfNeeded(nickname: nickname)
+            self?.addRemoteMemberIfNeeded(nickname: nickname)
         }
 
         relay.onMemberUpdate = { [weak self] nickname, payload in
@@ -154,30 +174,18 @@ final class TeamSessionStore: ObservableObject {
         }
     }
 
-    private func addMockMemberIfNeeded(nickname: String) {
+    private func addRemoteMemberIfNeeded(nickname: String) {
         guard !members.contains(where: { $0.nickname == nickname }) else { return }
 
         let memberIndex = members.count
-        let baseLatitude = 22.3678 + Double(memberIndex) * 0.002
-        let baseLongitude = 114.1817 + Double(memberIndex) * 0.002
-        let points = Self.makeMemberTrailPoints(
-            baseLatitude: baseLatitude,
-            baseLongitude: baseLongitude
-        )
-        let lastPoint = points.last
-        let fallbackCoordinate = CLLocationCoordinate2D(
-            latitude: baseLatitude,
-            longitude: baseLongitude
-        )
-
         let member = TeamMember(
             id: UUID(),
             nickname: nickname,
             color: TeamMember.color(for: memberIndex),
             isSelf: false,
-            recentPoints: points,
-            currentCoordinate: lastPoint?.coordinate ?? fallbackCoordinate,
-            elevation: lastPoint?.elevation ?? 60,
+            recentPoints: [],
+            currentCoordinate: CLLocationCoordinate2D(latitude: 0, longitude: 0),
+            elevation: 0,
             lastSeen: .now
         )
         members.append(member)
@@ -187,7 +195,7 @@ final class TeamSessionStore: ObservableObject {
     private func applyRemoteUpdate(nickname: String, payload: TeamLocationPayload) {
         guard let index = members.firstIndex(where: { $0.nickname == nickname && !$0.isSelf }) else {
             if !members.contains(where: { $0.nickname == nickname }) {
-                addMockMemberIfNeeded(nickname: nickname)
+                addRemoteMemberIfNeeded(nickname: nickname)
             }
             guard let idx = members.firstIndex(where: { $0.nickname == nickname }) else { return }
             updateMember(at: idx, payload: payload)
@@ -220,24 +228,5 @@ final class TeamSessionStore: ObservableObject {
 
     private static func generateRoomCode() -> String {
         String(format: "%04d", Int.random(in: 0...9999))
-    }
-
-    private static func makeMemberTrailPoints(
-        baseLatitude: Double,
-        baseLongitude: Double
-    ) -> [HistoryPoint] {
-        var points: [HistoryPoint] = []
-        points.reserveCapacity(6)
-        for index in 0..<6 {
-            points.append(
-                HistoryPoint(
-                    timestamp: Date().addingTimeInterval(Double(index - 6) * 20),
-                    latitude: baseLatitude + Double(index) * 0.0005,
-                    longitude: baseLongitude + Double(index) * 0.0004,
-                    elevation: 60 + Double(index) * 3
-                )
-            )
-        }
-        return points
     }
 }

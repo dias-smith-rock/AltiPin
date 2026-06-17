@@ -1,3 +1,4 @@
 *.xcuserstate
 xcuserdata/
 .gpx/
+AltiPin/AltiPin/Config/Secrets.xcconfig

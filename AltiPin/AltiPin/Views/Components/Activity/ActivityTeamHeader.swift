@@ -18,9 +18,9 @@ struct ActivityTeamHeader: ToolbarContent {
                         .font(.headline)
                         .foregroundStyle(.white)
 
-                    Text("\(teamSession.onlineMemberCount) 人在线")
+                    Text(subtitleText)
                         .font(.caption2)
-                        .foregroundStyle(AltitudeTheme.accent)
+                        .foregroundStyle(subtitleColor)
                 }
             }
 
@@ -55,5 +55,20 @@ struct ActivityTeamHeader: ToolbarContent {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private var subtitleText: String {
+        switch teamSession.connectionState {
+        case .disconnected:
+            "连接中断"
+        case .connecting:
+            "连接中…"
+        default:
+            "\(teamSession.onlineMemberCount) 人在线"
+        }
+    }
+
+    private var subtitleColor: Color {
+        teamSession.connectionState == .disconnected ? .red.opacity(0.85) : AltitudeTheme.accent
     }
 }
