@@ -7,88 +7,148 @@ import SwiftUI
 
 struct ActivityTabView: View {
     @ObservedObject var store: OutdoorDashboardStore
-    @State private var showTeamDashboard = false
+    @StateObject private var teamSession = TeamSessionStore()
+    @AppStorage("activityNickname") private var activityNickname = ""
 
-    private let gridColumns = [
-        GridItem(.flexible(), spacing: 16),
-        GridItem(.flexible(), spacing: 16),
-    ]
+    @State private var showFaceToFaceSheet = false
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: 16) {
-                    speedCard
-                    durationCard
-                    distanceCard
+            ZStack(alignment: .top) {
+                GroupTrackMapView(
+                    members: teamSession.isInRoom ? teamSession.members : [],
+                    visibleMemberIDs: teamSession.visibleMemberIDs,
+                    selfFallbackPoints: store.recentHistoryPoints
+                )
+
+                VStack(spacing: 0) {
+                    if teamSession.isInRoom {
+                        MemberFilterBar(teamSession: teamSession)
+                    }
+
+                    Spacer()
+
+                    metricsOverlay
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 12)
                 }
-                .padding(20)
             }
-            .oledTabBackground()
-            .navigationTitle("运动")
+            .background(Color.black)
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.black, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("临时组队") {
-                        showTeamDashboard = true
-                    }
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Color.accentColor, in: Capsule())
-                }
+                ActivityTeamHeader(
+                    teamSession: teamSession,
+                    onFaceToFaceTapped: { showFaceToFaceSheet = true },
+                    onLeaveTapped: { teamSession.leaveRoom() }
+                )
             }
-            .sheet(isPresented: $showTeamDashboard) {
-                NavigationStack {
-                    TeamSplitMapView()
-                        .navigationTitle("临时探险队")
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("关闭") {
-                                    showTeamDashboard = false
-                                }
-                            }
-                        }
+            .sheet(isPresented: $showFaceToFaceSheet) {
+                FaceToFaceTeamSheet(
+                    teamSession: teamSession,
+                    nickname: $activityNickname
+                )
+            }
+            .onAppear {
+                ensureNickname()
+                syncSelfLocation()
+            }
+            .onChange(of: store.recentHistoryPoints) { _, _ in
+                syncSelfLocation()
+            }
+            .onChange(of: store.latitude) { _, _ in
+                syncSelfLocation()
+            }
+            .onChange(of: store.longitude) { _, _ in
+                syncSelfLocation()
+            }
+            .onChange(of: teamSession.isInRoom) { _, isInRoom in
+                if isInRoom {
+                    syncSelfLocation()
                 }
             }
         }
     }
 
-    private var speedCard: some View {
-        OLEDMetricCard(title: "移动速度", icon: "speedometer") {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text(store.speedKmh, format: .number.precision(.fractionLength(2)))
-                Text(" km/h")
-                    .font(.system(.title3, design: .monospaced))
-                    .foregroundStyle(.gray)
-            }
+    // MARK: - Sync
+
+    private func syncSelfLocation() {
+        teamSession.ingestSelfLocation(from: store)
+    }
+
+    private func ensureNickname() {
+        if activityNickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            activityNickname = "徒步者\(Int.random(in: 100...999))"
         }
     }
 
-    private var durationCard: some View {
-        OLEDMetricCard(title: "持续时间", icon: "clock") {
-            Text(
-                Duration.seconds(store.sessionDuration),
-                format: .time(pattern: .hourMinute(padHourToLength: 2))
+    // MARK: - Metrics Overlay
+
+    private var metricsOverlay: some View {
+        HStack(spacing: 10) {
+            metricPill(
+                title: "速度",
+                value: String(format: "%.1f", store.speedKmh),
+                unit: "km/h"
+            )
+            metricPill(
+                title: "时长",
+                value: durationText,
+                unit: nil
+            )
+            metricPill(
+                title: "行程",
+                value: String(format: "%.1f", store.cumulativeDistanceMeters / 1000),
+                unit: "km"
             )
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.black.opacity(0.72))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
     }
 
-    private var distanceCard: some View {
-        OLEDMetricCard(title: "累计行程", icon: "figure.walk") {
-            HStack(alignment: .firstTextBaseline, spacing: 0) {
-                Text(store.cumulativeDistanceMeters / 1000, format: .number.precision(.fractionLength(1)))
-                Text(" km")
-                    .font(.system(.title3, design: .monospaced))
-                    .foregroundStyle(.gray)
+    private func metricPill(title: String, value: String, unit: String?) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.caption2)
+                .foregroundStyle(AltitudeTheme.accent)
+
+            HStack(alignment: .firstTextBaseline, spacing: 2) {
+                Text(value)
+                    .font(.system(.body, design: .rounded))
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                if let unit {
+                    Text(unit)
+                        .font(.caption2)
+                        .foregroundStyle(.gray)
+                }
             }
         }
-        .gridCellColumns(2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var durationText: String {
+        let totalSeconds = max(0, Int(store.sessionDuration.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 

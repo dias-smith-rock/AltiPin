@@ -34,6 +34,9 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var speedSessionDistanceMeters: Double = 0
     @Published private(set) var speedSessionMaxSpeedKmh: Double = 0
     @Published private(set) var speedSessionElevationGainMeters: Double = 0
+    @Published private(set) var recentHistoryPoints: [HistoryPoint] = []
+
+    private let maxRecentHistoryPoints = 20
 
     var speedSessionAverageSpeedKmh: Double {
         guard speedSessionDuration > 0 else { return 0 }
@@ -63,6 +66,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private var speedSessionStartDate: Date?
     private var speedSessionLastSample: CLLocation?
     private var speedSessionTimer: Timer?
+    private var lastHistoryPointSample: CLLocation?
 
     override init() {
         super.init()
@@ -81,6 +85,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         sessionDuration = 0
         cumulativeDistanceMeters = 0
         lastDistanceSample = nil
+        lastHistoryPointSample = nil
+        recentHistoryPoints = []
         gpsBaselineAltitude = nil
         altimeterReference = nil
 
@@ -299,6 +305,33 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         if isSpeedSessionActive {
             ingestSpeedSessionSample(location)
         }
+
+        appendHistoryPointIfNeeded(location)
+    }
+
+    private func appendHistoryPointIfNeeded(_ location: CLLocation) {
+        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 else { return }
+
+        if let last = lastHistoryPointSample {
+            let interval = location.timestamp.timeIntervalSince(last.timestamp)
+            let distance = location.distance(from: last)
+            if distance < 3, interval < 8 { return }
+        }
+
+        let elevation = elevationMeters > 0 ? elevationMeters : location.altitude
+        let point = HistoryPoint(
+            timestamp: location.timestamp,
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude,
+            elevation: elevation
+        )
+
+        recentHistoryPoints.append(point)
+        if recentHistoryPoints.count > maxRecentHistoryPoints {
+            recentHistoryPoints.removeFirst(recentHistoryPoints.count - maxRecentHistoryPoints)
+        }
+
+        lastHistoryPointSample = location
     }
 
     private func ingestSpeedSessionSample(_ location: CLLocation) {
@@ -363,6 +396,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         store.speedSessionDistanceMeters = 540
         store.speedSessionMaxSpeedKmh = 7.9
         store.speedSessionElevationGainMeters = 12.4
+        store.recentHistoryPoints = HistoryPoint.mockPoints
         return store
     }
 
