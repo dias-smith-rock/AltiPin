@@ -30,7 +30,6 @@ struct AltitudeTabView: View {
                     matchedBuildingLabel: store.matchedBuildingLabel,
                     floorCalibrationSource: store.floorCalibrationSource,
                     isManualNavigationOverride: store.isManualNavigationOverride,
-                    calibrationReferenceAltitudeMeters: store.indoorCalibrationReferenceAltitudeMeters,
                     onRefresh: refreshAll,
                     onSettings: { showSettings = true }
                 )

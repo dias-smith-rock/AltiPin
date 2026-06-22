@@ -112,11 +112,6 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         navigationEnvironment == .indoor && indoorFloorEstimator.isCalibrated
     }
 
-    var indoorCalibrationReferenceAltitudeMeters: Double? {
-        guard let baseline = indoorBaselinePressureHPa, baseline > 0 else { return nil }
-        return IndoorFloorEstimator.altitudeMeters(fromPressureHPa: baseline)
-    }
-
     /// 切换环境判定模式：自动 / 手动室内 / 手动室外。
     func setNavigationEnvironmentControlMode(_ mode: NavigationEnvironmentControlMode) {
         navigationEnvironmentControlMode = mode
