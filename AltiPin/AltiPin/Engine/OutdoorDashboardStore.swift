@@ -10,6 +10,12 @@ import Foundation
 import SwiftData
 import UIKit
 
+enum ActivitySessionPhase: String, Sendable {
+    case idle
+    case running
+    case paused
+}
+
 @MainActor
 final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var heading: Double = 0
@@ -46,6 +52,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var speedSessionMaxSpeedKmh: Double = 0
     @Published private(set) var speedSessionElevationGainMeters: Double = 0
     @Published private(set) var recentHistoryPoints: [HistoryPoint] = []
+    @Published private(set) var activitySessionPhase: ActivitySessionPhase = .idle
 
     var speedSessionAverageSpeedKmh: Double {
         guard speedSessionDuration > 0 else { return 0 }
@@ -70,9 +77,10 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
 
     private var gpsBaselineAltitude: Double?
     private var altimeterReference: Double?
-    private var lastDistanceSample: CLLocation?
-    private var sessionStartDate: Date?
-    private var durationTimer: Timer?
+    private var activityAccumulatedDuration: TimeInterval = 0
+    private var activitySegmentStartDate: Date?
+    private var activityDurationTimer: Timer?
+    private var activityLastDistanceSample: CLLocation?
     private var lastMagneticFieldUpdateDate: Date?
     private let magneticFieldUpdateInterval: TimeInterval = 0.5
 
@@ -134,10 +142,6 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         guard !isMonitoring else { return }
 
         isMonitoring = true
-        sessionStartDate = .now
-        sessionDuration = 0
-        cumulativeDistanceMeters = 0
-        lastDistanceSample = nil
         lastHistoryPointSample = nil
         recentHistoryPoints = RecentHistoryBuffer.shared.points
         gpsBaselineAltitude = nil
@@ -159,9 +163,12 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         locationManager.startUpdatingHeading()
         startAltimeter()
         startMotionActivityUpdates()
-        startDurationTimer()
         startDeviceMotion()
         startMagnetometer()
+
+        if activitySessionPhase == .running {
+            beginActivityDurationSegment()
+        }
     }
 
     func stopMonitoring() {
@@ -178,8 +185,46 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         motionActivityManager.stopActivityUpdates()
         motionManager.stopDeviceMotionUpdates()
         motionManager.stopMagnetometerUpdates()
-        durationTimer?.invalidate()
-        durationTimer = nil
+
+        if activitySessionPhase == .running {
+            freezeActivityDuration()
+        }
+        stopActivityDurationTimer()
+    }
+
+    func startActivitySession() {
+        switch activitySessionPhase {
+        case .idle:
+            activityAccumulatedDuration = 0
+            sessionDuration = 0
+            cumulativeDistanceMeters = 0
+            activityLastDistanceSample = lastKnownLocation
+            activitySessionPhase = .running
+            beginActivityDurationSegment()
+        case .paused:
+            activitySessionPhase = .running
+            activityLastDistanceSample = lastKnownLocation
+            beginActivityDurationSegment()
+        case .running:
+            break
+        }
+    }
+
+    func pauseActivitySession() {
+        guard activitySessionPhase == .running else { return }
+        freezeActivityDuration()
+        stopActivityDurationTimer()
+        activitySessionPhase = .paused
+    }
+
+    func resetActivitySession() {
+        activitySessionPhase = .idle
+        activityAccumulatedDuration = 0
+        activitySegmentStartDate = nil
+        sessionDuration = 0
+        cumulativeDistanceMeters = 0
+        activityLastDistanceSample = nil
+        stopActivityDurationTimer()
     }
 
     func startSpeedSession() {
@@ -339,14 +384,39 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         }
     }
 
-    private func startDurationTimer() {
-        durationTimer?.invalidate()
-        durationTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+    private func beginActivityDurationSegment() {
+        activitySegmentStartDate = .now
+        refreshActivityDurationDisplay()
+        startActivityDurationTimer()
+    }
+
+    private func freezeActivityDuration() {
+        guard let start = activitySegmentStartDate else { return }
+        activityAccumulatedDuration += Date().timeIntervalSince(start)
+        activitySegmentStartDate = nil
+        sessionDuration = activityAccumulatedDuration
+    }
+
+    private func refreshActivityDurationDisplay() {
+        if let start = activitySegmentStartDate {
+            sessionDuration = activityAccumulatedDuration + Date().timeIntervalSince(start)
+        } else {
+            sessionDuration = activityAccumulatedDuration
+        }
+    }
+
+    private func startActivityDurationTimer() {
+        activityDurationTimer?.invalidate()
+        activityDurationTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
-                guard let self, let start = self.sessionStartDate else { return }
-                self.sessionDuration = Date().timeIntervalSince(start)
+                self?.refreshActivityDurationDisplay()
             }
         }
+    }
+
+    private func stopActivityDurationTimer() {
+        activityDurationTimer?.invalidate()
+        activityDurationTimer = nil
     }
 
     private func startSpeedSessionTimer() {
@@ -430,15 +500,19 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
             elevationMeters = location.altitude
         }
 
-        if let last = lastDistanceSample, location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 {
-            let delta = location.distance(from: last)
-            if delta >= 2 {
-                cumulativeDistanceMeters += delta
+        if activitySessionPhase == .running {
+            if let last = activityLastDistanceSample,
+               location.horizontalAccuracy >= 0,
+               location.horizontalAccuracy <= 40 {
+                let delta = location.distance(from: last)
+                if delta >= 2 {
+                    cumulativeDistanceMeters += delta
+                }
             }
-        }
 
-        if location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 {
-            lastDistanceSample = location
+            if location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 {
+                activityLastDistanceSample = location
+            }
         }
 
         if isSpeedSessionActive {
@@ -748,8 +822,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         store.elevationMeters = 91
         store.speedKmh = 1.50
         store.pressureHPa = 1013.2
-        store.sessionDuration = 24 * 60
-        store.cumulativeDistanceMeters = 1200
+        store.configurePreviewActivitySession(duration: 24 * 60, distanceMeters: 1200)
         store.horizontalAccuracy = 5
         store.verticalAccuracy = 8
         store.magneticFieldX = 22.5
@@ -769,6 +842,15 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         }
         return store
     }
+
+    #if DEBUG
+    func configurePreviewActivitySession(duration: TimeInterval, distanceMeters: Double) {
+        activitySessionPhase = .running
+        activityAccumulatedDuration = duration
+        sessionDuration = duration
+        cumulativeDistanceMeters = distanceMeters
+    }
+    #endif
 
     static func previewIdle() -> OutdoorDashboardStore {
         let store = preview()
