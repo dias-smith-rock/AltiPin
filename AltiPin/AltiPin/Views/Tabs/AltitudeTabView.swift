@@ -9,7 +9,7 @@ import SwiftUI
 struct AltitudeTabView: View {
     @ObservedObject var store: OutdoorDashboardStore
     @ObservedObject var weatherService: CompassWeatherService
-    @ObservedObject private var recentHistoryBuffer = RecentHistoryBuffer.shared
+    @StateObject private var footprintEngine = FootprintTrackingEngine.shared
 
     @State private var showSettings = false
     @State private var showFloorCalibration = false
@@ -46,7 +46,7 @@ struct AltitudeTabView: View {
                     #endif
                 }
 
-                ElevationSessionChart(recentPoints: recentHistoryBuffer.points)
+                FootprintHistoryChartView(footprints: footprintEngine.recentFootprints)
 
                 sectionDivider
 
@@ -72,17 +72,18 @@ struct AltitudeTabView: View {
         .oledTabBackground()
         .onAppear {
             store.refreshNavigationEnvironmentForAltitudeTab()
-            bootstrapChartSamples()
+            bootstrapFootprintHistory()
             refreshWeatherIfNeeded()
-        }
-        .onChange(of: store.elevationMeters) { _, newValue in
-            appendLiveChartSample(elevation: newValue)
         }
         .onChange(of: store.latitude) { _, _ in
-            if recentHistoryBuffer.points.isEmpty {
-                bootstrapChartSamples()
-            }
+            seedFootprintIfNeeded()
             refreshWeatherIfNeeded()
+        }
+        .onChange(of: store.elevationMeters) { _, _ in
+            seedFootprintIfNeeded()
+        }
+        .onChange(of: store.horizontalAccuracy) { _, _ in
+            seedFootprintIfNeeded()
         }
         .onChange(of: store.longitude) { _, _ in
             refreshWeatherIfNeeded()
@@ -529,23 +530,33 @@ struct AltitudeTabView: View {
         return "\(Int(degrees.rounded()))°"
     }
 
-    private func bootstrapChartSamples() {
-        guard store.horizontalAccuracy >= 0 else { return }
+    private func bootstrapFootprintHistory() {
+        footprintEngine.reloadFromStore()
+
+        let elevation = store.elevationMeters > 0
+            ? store.elevationMeters
+            : (store.currentLocation.map { store.resolvedElevation(for: $0) } ?? 0)
+
         RecentHistoryBuffer.shared.bootstrapIfNeeded(
-            elevation: store.elevationMeters,
+            elevation: elevation,
             latitude: store.latitude,
             longitude: store.longitude,
             isIndoor: store.navigationEnvironment == .indoor
         )
+
+        footprintEngine.backfillFromHistoryIfNeeded(
+            historyPoints: RecentHistoryBuffer.shared.points
+        )
+        seedFootprintIfNeeded()
     }
 
-    private func appendLiveChartSample(elevation: Double) {
-        guard store.horizontalAccuracy >= 0 else { return }
-        RecentHistoryBuffer.shared.appendIfNeeded(
-            timestamp: .now,
-            latitude: store.latitude,
-            longitude: store.longitude,
-            elevation: elevation,
+    private func seedFootprintIfNeeded() {
+        guard footprintEngine.recentFootprints.isEmpty else { return }
+        guard let location = store.currentLocation else { return }
+
+        footprintEngine.seedInitialFootprintIfNeeded(
+            location: location,
+            elevation: store.resolvedElevation(for: location),
             isIndoor: store.navigationEnvironment == .indoor
         )
     }

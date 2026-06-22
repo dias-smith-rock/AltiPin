@@ -16,6 +16,7 @@ struct AltiPinApp: App {
         let schema = Schema([
             TripEntity.self,
             BuildingCalibrationEntity.self,
+            FootprintEntity.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -30,6 +31,9 @@ struct AltiPinApp: App {
         TrackingEngine.shared.configure()
         TrackingEngine.shared.delegate = AppTrackingDelegate.shared
         TrackingEngine.shared.configureBuildingCalibration(
+            modelContext: sharedModelContainer.mainContext
+        )
+        FootprintTrackingEngine.shared.configure(
             modelContext: sharedModelContainer.mainContext
         )
     }

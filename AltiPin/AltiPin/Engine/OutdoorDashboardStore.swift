@@ -250,7 +250,26 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
 
     var currentLocation: CLLocation? {
         guard horizontalAccuracy >= 0 else { return nil }
-        return CLLocation(latitude: latitude, longitude: longitude)
+        if let lastKnownLocation {
+            return lastKnownLocation
+        }
+        return CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
+            altitude: elevationMeters,
+            horizontalAccuracy: horizontalAccuracy,
+            verticalAccuracy: verticalAccuracy,
+            timestamp: Date()
+        )
+    }
+
+    /// 脚印/历史采样使用的统一海拔解析。
+    func resolvedElevation(for location: CLLocation) -> Double {
+        if elevationMeters > 0 { return elevationMeters }
+        if location.verticalAccuracy >= 0 { return location.altitude }
+        if let lastKnownLocation, lastKnownLocation.verticalAccuracy >= 0 {
+            return lastKnownLocation.altitude
+        }
+        return location.altitude
     }
 
     var compassDirectionName: String {
@@ -303,6 +322,10 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
                 if self.navigationEnvironment == .indoor {
                     self.beginIndoorFloorCalibrationIfNeeded(with: self.lastKnownLocation)
                     self.updateIndoorFloorEstimateIfNeeded()
+                }
+
+                if let location = self.lastKnownLocation {
+                    self.ingestFootprintIfNeeded(location: location)
                 }
             }
         }
@@ -426,6 +449,29 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         }
 
         appendHistoryPointIfNeeded(location)
+        ingestFootprintIfNeeded(location: location)
+    }
+
+    private func ingestFootprintIfNeeded(location: CLLocation) {
+        guard horizontalAccuracy >= 0 else { return }
+
+        let elevation = resolvedElevation(for: location)
+        let engine = FootprintTrackingEngine.shared
+
+        if engine.recentFootprints.isEmpty {
+            engine.seedInitialFootprintIfNeeded(
+                location: location,
+                elevation: elevation,
+                isIndoor: navigationEnvironment == .indoor
+            )
+        }
+
+        engine.ingest(
+            location: location,
+            elevation: elevation,
+            isIndoor: navigationEnvironment == .indoor,
+            motionActivity: latestMotionActivity
+        )
     }
 
     private func evaluateNavigationEnvironment(with location: CLLocation, triggerHaptic: Bool = true) {
@@ -635,7 +681,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private func appendHistoryPointIfNeeded(_ location: CLLocation) {
         guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 else { return }
 
-        let elevation = elevationMeters > 0 ? elevationMeters : location.altitude
+        let elevation = resolvedElevation(for: location)
         let isIndoor = navigationEnvironment == .indoor
 
         if RecentHistoryBuffer.shared.appendIfNeeded(

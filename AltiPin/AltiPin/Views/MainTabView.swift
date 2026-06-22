@@ -66,5 +66,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
-        .modelContainer(for: [TripEntity.self, BuildingCalibrationEntity.self], inMemory: true)
+        .modelContainer(for: [TripEntity.self, BuildingCalibrationEntity.self, FootprintEntity.self], inMemory: true)
 }
