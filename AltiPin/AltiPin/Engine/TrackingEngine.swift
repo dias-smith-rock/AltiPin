@@ -170,6 +170,14 @@ final class TrackingEngine: NSObject {
 
     // MARK: - State Machine
 
+    private var canEnableBackgroundLocationUpdates: Bool {
+        guard locationManager.authorizationStatus == .authorizedAlways else { return false }
+        guard let modes = Bundle.main.object(forInfoDictionaryKey: "UIBackgroundModes") as? [String] else {
+            return false
+        }
+        return modes.contains("location")
+    }
+
     private func enterSleeping() {
         phase = .sleeping
         stationarySince = nil
@@ -247,7 +255,15 @@ final class TrackingEngine: NSObject {
         stopSleepAltimeter()
         stopSleepMotionMonitoring()
 
-        locationManager.allowsBackgroundLocationUpdates = true
+        if canEnableBackgroundLocationUpdates {
+            locationManager.allowsBackgroundLocationUpdates = true
+        } else {
+            locationManager.allowsBackgroundLocationUpdates = false
+            NSLog(
+                "TrackingEngine: background location disabled " +
+                "(requires Always authorization and UIBackgroundModes location)"
+            )
+        }
         resumeHighPrecisionGPS()
         startMotionActivityUpdates()
         startFullAltimeter()
