@@ -183,7 +183,7 @@ final class FootprintTrackingEngine: ObservableObject {
                 id: last.id,
                 coordinate: location.coordinate,
                 elevation: elevation,
-                timestamp: location.timestamp,
+                timestamp: last.timestamp,
                 isIndoor: isIndoor
             )
 
