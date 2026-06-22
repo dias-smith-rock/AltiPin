@@ -74,7 +74,7 @@ struct AltitudeHeroHeader: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 20)
         }
-        .frame(height: isIndoorMode ? 220 : 200)
+        .frame(height: 220)
     }
 
     private var heroSubtitle: String {

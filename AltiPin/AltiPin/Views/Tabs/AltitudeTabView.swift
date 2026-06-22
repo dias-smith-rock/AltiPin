@@ -37,6 +37,10 @@ struct AltitudeTabView: View {
                 environmentModeSection
                 sectionDivider
 
+                FootprintHistoryChartView(footprints: footprintEngine.recentFootprints)
+
+                sectionDivider
+
                 if store.navigationEnvironment == .indoor {
                     indoorFloorSection
                     sectionDivider
@@ -45,10 +49,6 @@ struct AltitudeTabView: View {
                     sectionDivider
                     #endif
                 }
-
-                FootprintHistoryChartView(footprints: footprintEngine.recentFootprints)
-
-                sectionDivider
 
                 coordinatesSection
                 sectionDivider
