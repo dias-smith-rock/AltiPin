@@ -12,6 +12,7 @@ struct ActivityTabView: View {
     @AppStorage("activityNickname") private var activityNickname = ""
 
     @State private var showFaceToFaceSheet = false
+    @State private var isMapFullscreen = false
 
     var body: some View {
         NavigationStack {
@@ -21,33 +22,47 @@ struct ActivityTabView: View {
                     visibleMemberIDs: teamSession.visibleMemberIDs,
                     selfFallbackPoints: store.recentHistoryPoints
                 )
-
-                VStack(spacing: 0) {
-                    if teamSession.isInRoom {
-                        MemberFilterBar(teamSession: teamSession)
+                .ignoresSafeArea(edges: isMapFullscreen ? [.top, .bottom] : [])
+                .simultaneousGesture(
+                    TapGesture().onEnded {
+                        toggleMapFullscreen()
                     }
+                )
 
-                    Spacer()
+                if !isMapFullscreen {
+                    VStack(spacing: 0) {
+                        if teamSession.isInRoom {
+                            MemberFilterBar(teamSession: teamSession)
+                        }
 
-                    VStack(spacing: 10) {
-                        metricsOverlay
-                        sessionControlBar
+                        Spacer()
+
+                        VStack(spacing: 10) {
+                            metricsOverlay
+                            sessionControlBar
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 12)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
+                    .transition(.opacity)
                 }
             }
             .background(Color.black)
+            .animation(.easeInOut(duration: 0.22), value: isMapFullscreen)
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
+            .toolbar(isMapFullscreen ? .hidden : .visible, for: .tabBar)
             .toolbarBackground(.black, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
-                ActivityTeamHeader(
-                    teamSession: teamSession,
-                    onFaceToFaceTapped: { showFaceToFaceSheet = true },
-                    onLeaveTapped: { teamSession.leaveRoom() }
-                )
+                if !isMapFullscreen {
+                    ActivityTeamHeader(
+                        teamSession: teamSession,
+                        onFaceToFaceTapped: { showFaceToFaceSheet = true },
+                        onLeaveTapped: { teamSession.leaveRoom() }
+                    )
+                }
             }
             .sheet(isPresented: $showFaceToFaceSheet) {
                 FaceToFaceTeamSheet(
@@ -58,6 +73,9 @@ struct ActivityTabView: View {
             .onAppear {
                 ensureNickname()
                 syncSelfLocation()
+            }
+            .onDisappear {
+                isMapFullscreen = false
             }
             .onChange(of: store.recentHistoryPoints) { _, _ in
                 syncSelfLocation()
@@ -86,6 +104,11 @@ struct ActivityTabView: View {
         if activityNickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             activityNickname = "徒步者\(Int.random(in: 100...999))"
         }
+    }
+
+    private func toggleMapFullscreen() {
+        UISelectionFeedbackGenerator().selectionChanged()
+        isMapFullscreen.toggle()
     }
 
     // MARK: - Metrics Overlay
