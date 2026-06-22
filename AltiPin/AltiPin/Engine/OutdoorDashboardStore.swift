@@ -112,6 +112,11 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         navigationEnvironment == .indoor && indoorFloorEstimator.isCalibrated
     }
 
+    var indoorCalibrationReferenceAltitudeMeters: Double? {
+        guard let baseline = indoorBaselinePressureHPa, baseline > 0 else { return nil }
+        return IndoorFloorEstimator.altitudeMeters(fromPressureHPa: baseline)
+    }
+
     /// 切换环境判定模式：自动 / 手动室内 / 手动室外。
     func setNavigationEnvironmentControlMode(_ mode: NavigationEnvironmentControlMode) {
         navigationEnvironmentControlMode = mode
@@ -230,7 +235,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         guard navigationEnvironment == .indoor, pressureHPa > 0 else { return }
         applyFloorCalibration(
             baseFloor: floor,
-            pressureHPa: pressureHPa,
+            baselinePressureHPa: pressureHPa,
+            currentPressureHPa: pressureHPa,
             label: label,
             source: .manual,
             persist: true
@@ -589,16 +595,18 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
             location: location,
             buildingStore: buildingCalibrationStore
         ) {
-        case let .calibrated(baseFloor, source, label):
+        case let .calibrated(baseFloor, storedBaselinePressure, source, label):
+            let baselinePressure = storedBaselinePressure ?? pressureHPa
             applyFloorCalibration(
                 baseFloor: baseFloor,
-                pressureHPa: pressureHPa,
+                baselinePressureHPa: baselinePressure,
+                currentPressureHPa: pressureHPa,
                 label: label,
                 source: source,
                 persist: source != .persisted
             )
             if source == .persisted, let record = buildingCalibrationStore?.findMatch(near: location)?.record {
-                buildingCalibrationStore?.touch(record, baselinePressureHPa: pressureHPa)
+                buildingCalibrationStore?.touchUsageOnly(record)
             }
         case .needsManual:
             needsFloorCalibration = true
@@ -608,14 +616,16 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
 
     private func applyFloorCalibration(
         baseFloor: Int,
-        pressureHPa: Double,
+        baselinePressureHPa: Double,
+        currentPressureHPa: Double,
         label: String?,
         source: FloorCalibrationSource,
         persist: Bool
     ) {
-        indoorFloorEstimator.calibrate(baseFloor: baseFloor, pressureHPa: pressureHPa)
-        indoorBaselinePressureHPa = pressureHPa
-        estimatedIndoorFloor = indoorFloorEstimator.estimatedFloor
+        indoorFloorEstimator.calibrate(baseFloor: baseFloor, pressureHPa: baselinePressureHPa)
+        indoorBaselinePressureHPa = baselinePressureHPa
+        estimatedIndoorFloor = indoorFloorEstimator.update(currentPressureHPa: currentPressureHPa)
+            ?? indoorFloorEstimator.estimatedFloor
         needsFloorCalibration = false
         matchedBuildingLabel = label
         floorCalibrationSource = source
@@ -625,7 +635,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
             buildingCalibrationStore?.saveCalibration(
                 location: location,
                 floor: baseFloor,
-                pressureHPa: pressureHPa,
+                pressureHPa: baselinePressureHPa,
                 label: savedLabel
             )
             if savedLabel != nil {
@@ -635,6 +645,9 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
 
         NSLog(
             "OutdoorDashboardStore: floor calibrated base=\(baseFloor) source=\(source.rawValue) " +
+            "baseline=\(String(format: "%.1f", baselinePressureHPa))hPa " +
+            "current=\(String(format: "%.1f", currentPressureHPa))hPa " +
+            "estimated=\(estimatedIndoorFloor.map(String.init) ?? "—") " +
             "label=\(label ?? "—")"
         )
     }

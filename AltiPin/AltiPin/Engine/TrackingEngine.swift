@@ -664,18 +664,24 @@ final class TrackingEngine: NSObject {
             location: location,
             buildingStore: buildingCalibrationStore
         ) {
-        case let .calibrated(baseFloor, source, _):
-            indoorFloorEstimator.calibrate(baseFloor: baseFloor, pressureHPa: lastPressureHPa)
+        case let .calibrated(baseFloor, storedBaselinePressure, source, _):
+            let baselinePressure = storedBaselinePressure ?? lastPressureHPa
+            indoorFloorEstimator.calibrate(baseFloor: baseFloor, pressureHPa: baselinePressure)
+            estimatedIndoorFloor = indoorFloorEstimator.update(currentPressureHPa: lastPressureHPa)
+                ?? indoorFloorEstimator.estimatedFloor
             if source == .persisted, let record = buildingCalibrationStore?.findMatch(near: location)?.record {
-                buildingCalibrationStore?.touch(record, baselinePressureHPa: lastPressureHPa)
+                buildingCalibrationStore?.touchUsageOnly(record)
             } else if source == .clFloor {
                 buildingCalibrationStore?.saveCalibration(
                     location: location,
                     floor: baseFloor,
-                    pressureHPa: lastPressureHPa
+                    pressureHPa: baselinePressure
                 )
             }
-            NSLog("TrackingEngine: floor calibrated base=\(baseFloor) source=\(source.rawValue)")
+            NSLog(
+                "TrackingEngine: floor calibrated base=\(baseFloor) source=\(source.rawValue) " +
+                "estimated=\(estimatedIndoorFloor.map(String.init) ?? "—")"
+            )
         case .needsManual:
             NSLog("TrackingEngine: indoor floor calibration deferred (awaiting manual input)")
         }

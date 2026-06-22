@@ -24,7 +24,7 @@ final class BuildingCalibrationEntity {
         calibratedBaseFloor: Int,
         lastBaselinePressureHPa: Double,
         optionalLabel: String? = nil,
-        matchRadiusMeters: Double = 80,
+        matchRadiusMeters: Double = 500,
         lastCalibratedAt: Date = .now,
         useCount: Int = 1
     ) {

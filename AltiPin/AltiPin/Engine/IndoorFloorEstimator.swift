@@ -43,6 +43,11 @@ final class IndoorFloorEstimator {
         NSLog("IndoorFloorEstimator: deactivated")
     }
 
+    static func altitudeMeters(fromPressureHPa pressureHPa: Double) -> Double {
+        guard pressureHPa > 0 else { return 0 }
+        return 44330.0 * (1.0 - pow(pressureHPa / 1013.25, 0.1903))
+    }
+
     @discardableResult
     func update(currentPressureHPa: Double) -> Int? {
         guard isActive, isCalibrated, currentPressureHPa > 0,
@@ -65,7 +70,6 @@ final class IndoorFloorEstimator {
     }
 
     private static func pressureToAltitudeMeters(_ pressureHPa: Double) -> Double {
-        guard pressureHPa > 0 else { return 0 }
-        return 44330.0 * (1.0 - pow(pressureHPa / 1013.25, 0.1903))
+        altitudeMeters(fromPressureHPa: pressureHPa)
     }
 }

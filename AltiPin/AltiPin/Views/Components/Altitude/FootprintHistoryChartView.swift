@@ -239,8 +239,6 @@ struct FootprintHistoryChartView: View {
         if plottables.count == 1, let only = plottables.first {
             singlePointMarks(for: only)
         } else {
-            let interpolation = interpolationMethod(for: plottables)
-
             if plottables.count >= 3 {
                 ForEach(plottables) { item in
                     AreaMark(
@@ -250,7 +248,7 @@ struct FootprintHistoryChartView: View {
                         series: .value("脚印", "area")
                     )
                     .foregroundStyle(areaGradient)
-                    .interpolationMethod(interpolation)
+                    .interpolationMethod(.linear)
                 }
             }
 
@@ -262,7 +260,7 @@ struct FootprintHistoryChartView: View {
                 )
                 .foregroundStyle(AltitudeTheme.chartLine)
                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
-                .interpolationMethod(interpolation)
+                .interpolationMethod(.linear)
             }
 
             ForEach(plottables) { item in
@@ -335,18 +333,6 @@ struct FootprintHistoryChartView: View {
     }
 
     // MARK: - Helpers
-
-    private func interpolationMethod(for items: [FootprintPlottable]) -> InterpolationMethod {
-        if items.contains(where: \.isIndoor) {
-            return .stepCenter
-        }
-        switch items.count {
-        case 0, 1, 2:
-            return .linear
-        default:
-            return .catmullRom
-        }
-    }
 
     private var areaGradient: LinearGradient {
         LinearGradient(

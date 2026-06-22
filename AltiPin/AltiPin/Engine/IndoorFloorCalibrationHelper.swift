@@ -13,7 +13,12 @@ enum FloorCalibrationSource: String, Sendable {
 }
 
 enum FloorCalibrationOutcome: Sendable {
-    case calibrated(baseFloor: Int, source: FloorCalibrationSource, label: String?)
+    case calibrated(
+        baseFloor: Int,
+        baselinePressureHPa: Double?,
+        source: FloorCalibrationSource,
+        label: String?
+    )
     case needsManual
 }
 
@@ -23,8 +28,10 @@ enum IndoorFloorCalibrationHelper {
         buildingStore: BuildingCalibrationStore?
     ) -> FloorCalibrationOutcome {
         if let store = buildingStore, let match = store.findMatch(near: location) {
+            let storedBaseline = match.record.lastBaselinePressureHPa
             return .calibrated(
                 baseFloor: match.record.calibratedBaseFloor,
+                baselinePressureHPa: storedBaseline > 0 ? storedBaseline : nil,
                 source: .persisted,
                 label: match.record.optionalLabel
             )
@@ -33,6 +40,7 @@ enum IndoorFloorCalibrationHelper {
         if let floor = location.floor?.level {
             return .calibrated(
                 baseFloor: max(1, floor),
+                baselinePressureHPa: nil,
                 source: .clFloor,
                 label: nil
             )

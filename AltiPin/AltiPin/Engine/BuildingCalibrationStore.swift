@@ -16,7 +16,7 @@ struct BuildingCalibrationMatch: Sendable {
 
 @MainActor
 final class BuildingCalibrationStore {
-    static let defaultMatchRadius: CLLocationDistance = 80
+    static let defaultMatchRadius: CLLocationDistance = 500
 
     private let modelContext: ModelContext
 
@@ -32,7 +32,7 @@ final class BuildingCalibrationStore {
         var best: BuildingCalibrationMatch?
         for record in records {
             let center = CLLocation(latitude: record.latitude, longitude: record.longitude)
-            let effectiveRadius = min(radius, record.matchRadiusMeters)
+            let effectiveRadius = min(radius, max(record.matchRadiusMeters, Self.defaultMatchRadius))
             let distance = location.distance(from: center)
             guard distance <= effectiveRadius else { continue }
 
@@ -70,6 +70,7 @@ final class BuildingCalibrationStore {
             existing.lastBaselinePressureHPa = pressureHPa
             existing.lastCalibratedAt = .now
             existing.useCount += 1
+            existing.matchRadiusMeters = Self.defaultMatchRadius
             if let label, !label.isEmpty {
                 existing.optionalLabel = label
             }
@@ -93,12 +94,20 @@ final class BuildingCalibrationStore {
         return record
     }
 
+    func touchUsageOnly(_ record: BuildingCalibrationEntity) {
+        record.lastCalibratedAt = .now
+        record.useCount += 1
+        record.matchRadiusMeters = Self.defaultMatchRadius
+        try? modelContext.save()
+    }
+
     func touch(_ record: BuildingCalibrationEntity, baselinePressureHPa: Double? = nil) {
         if let baselinePressureHPa {
             record.lastBaselinePressureHPa = baselinePressureHPa
         }
         record.lastCalibratedAt = .now
         record.useCount += 1
+        record.matchRadiusMeters = Self.defaultMatchRadius
         try? modelContext.save()
     }
 }

@@ -16,6 +16,7 @@ struct AltitudeHeroHeader: View {
     var matchedBuildingLabel: String?
     var floorCalibrationSource: FloorCalibrationSource?
     var isManualNavigationOverride: Bool = false
+    var calibrationReferenceAltitudeMeters: Double?
     let onRefresh: () -> Void
     let onSettings: () -> Void
 
@@ -111,18 +112,25 @@ struct AltitudeHeroHeader: View {
         .padding(.top, 2)
     }
 
+    private var calibrationReferenceAltitudeText: String {
+        if let reference = calibrationReferenceAltitudeMeters, reference.isFinite {
+            return "\(Int(reference.rounded()))m"
+        }
+        return "\(Int(elevationMeters.rounded()))m"
+    }
+
     private var indoorBadgeText: String {
         if needsFloorCalibration {
-            return "请设定当前楼层 · 参考海拔 \(Int(elevationMeters.rounded()))m"
+            return "请设定当前楼层 · 参考海拔 \(calibrationReferenceAltitudeText)"
         }
         if floorCalibrationSource == .persisted {
             let name = matchedBuildingLabel.map { " \($0)" } ?? ""
-            return "已恢复历史校准\(name) · 参考海拔 \(Int(elevationMeters.rounded()))m"
+            return "已恢复历史校准\(name) · 参考海拔 \(calibrationReferenceAltitudeText)"
         }
         if isIndoorFloorCalibrated {
-            return "室内模式 · 参考海拔 \(Int(elevationMeters.rounded()))m"
+            return "室内模式 · 参考海拔 \(calibrationReferenceAltitudeText)"
         }
-        return "室内模式 · 参考海拔 \(Int(elevationMeters.rounded()))m"
+        return "室内模式 · 参考海拔 \(calibrationReferenceAltitudeText)"
     }
 
     private var heroBackground: some View {
