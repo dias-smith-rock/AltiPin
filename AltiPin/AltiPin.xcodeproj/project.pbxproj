@@ -16,11 +16,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		AA0000052FDFC20000B8AC17 /* Exceptions for AltiPin folder */ = {
+		AA0000052FDFC20000B8AC17 /* Exceptions for "AltiPin" folder in "AltiPin" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Config/AltiPin.xcconfig,
-				Config/Supabase-Info.plist,
+				"Config/Supabase-Info.plist",
 			);
 			target = DD3C56452FDFB9DC00B8AC17 /* AltiPin */;
 		};
@@ -30,7 +30,7 @@
 		DD3C56482FDFB9DC00B8AC17 /* AltiPin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				AA0000052FDFC20000B8AC17 /* Exceptions for AltiPin folder */,
+				AA0000052FDFC20000B8AC17 /* Exceptions for "AltiPin" folder in "AltiPin" target */,
 			);
 			path = AltiPin;
 			sourceTree = "<group>";
@@ -294,7 +294,7 @@
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = AltiPin/Config/Supabase-Info.plist;
+				INFOPLIST_FILE = "AltiPin/Config/Supabase-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = AltiPin;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";
@@ -334,7 +334,7 @@
 				DEVELOPMENT_TEAM = 34878H47P6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = AltiPin/Config/Supabase-Info.plist;
+				INFOPLIST_FILE = "AltiPin/Config/Supabase-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = AltiPin;
 				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";

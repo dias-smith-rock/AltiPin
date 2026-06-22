@@ -9,19 +9,14 @@ import CoreLocation
 import CoreMotion
 import Foundation
 import Observation
+import SwiftData
+import UIKit
 
 // MARK: - Public Types
 
-struct TrackPoint: Sendable, Equatable {
-    let latitude: Double
-    let longitude: Double
-    let elevation: Double
-    let timestamp: Date
-}
-
 @MainActor
 protocol TrackingEngineDelegate: AnyObject {
-    func trackingEngine(_ engine: TrackingEngine, didAppend point: TrackPoint)
+    func trackingEngine(_ engine: TrackingEngine, didAppend point: HistoryPoint)
     func trackingEngine(_ engine: TrackingEngine, didFinalizeDay fileName: String, pointCount: Int)
 }
 
@@ -40,6 +35,8 @@ final class TrackingEngine: NSObject {
     }
 
     private(set) var phase: Phase = .sleeping
+    private(set) var navigationEnvironment: NavigationEnvironment = .outdoor
+    private(set) var estimatedIndoorFloor: Int?
 
     weak var delegate: TrackingEngineDelegate?
 
@@ -47,6 +44,10 @@ final class TrackingEngine: NSObject {
     private let motionActivityManager = CMMotionActivityManager()
     private let altimeter = CMAltimeter()
     private let pedometer = CMPedometer()
+    private let navigationEnvironmentController = NavigationEnvironmentController()
+    private let indoorFloorEstimator = IndoorFloorEstimator()
+    private var buildingCalibrationStore: BuildingCalibrationStore?
+    private var lastKnownLocation: CLLocation?
     private let locationQueue: OperationQueue = {
         let queue = OperationQueue()
         queue.name = "com.goodcraft.AltiPin.location"
@@ -61,11 +62,18 @@ final class TrackingEngine: NSObject {
     private var isStarted = false
     private var stationarySince: Date?
     private var lastAcceptedLocation: CLLocation?
-    private var lastAcceptedPoint: TrackPoint?
+    private var lastAcceptedPoint: HistoryPoint?
 
     private var baselineElevation: Double?
     private var altimeterReference: Double?
     private var altimeterRelativeOffset: Double?
+    private var sleepAltimeterRelativeBaseline: Double?
+    private var lastSleepAltimeterSampleDate: Date?
+    private var altitudeWakeMonitor = AltitudeWakeMonitor()
+    private var stationaryAltitudeMonitor = StationaryAltitudeMonitor()
+    private var lastSignificantHorizontalMoveDate: Date?
+    private var isSleepAltimeterActive = false
+    private var isFullAltimeterActive = false
 
     private var pointCountToday = 0
     private var hadSignificantChangeToday = false
@@ -74,6 +82,9 @@ final class TrackingEngine: NSObject {
 
     private var midnightTimer: Timer?
     private var stationaryCheckTimer: Timer?
+
+    private var lastPressureHPa: Double = 0
+    private var latestMotionActivity: CMMotionActivity?
 
     private override init() {
         super.init()
@@ -94,6 +105,10 @@ final class TrackingEngine: NSObject {
 
         scheduleMidnightRollover()
         refreshDailyStepCount()
+    }
+
+    func configureBuildingCalibration(modelContext: ModelContext) {
+        buildingCalibrationStore = BuildingCalibrationStore(modelContext: modelContext)
     }
 
     func requestPermissions() {
@@ -126,7 +141,9 @@ final class TrackingEngine: NSObject {
         isStarted = false
         stopStationaryCheckTimer()
         stopMotionActivityUpdates()
-        stopAltimeter()
+        stopSleepMotionMonitoring()
+        stopFullAltimeter()
+        stopSleepAltimeter()
         pauseHighPrecisionGPS()
         locationManager.stopMonitoringSignificantLocationChanges()
         finalizeCurrentTrackIfNeeded()
@@ -157,9 +174,10 @@ final class TrackingEngine: NSObject {
         phase = .sleeping
         stationarySince = nil
         stopStationaryCheckTimer()
-        stopMotionActivityUpdates()
-        stopAltimeter()
+        stopFullAltimeter()
         pauseHighPrecisionGPS()
+        startSleepAltimeter()
+        startSleepMotionMonitoring()
 
         locationManager.allowsBackgroundLocationUpdates = false
         locationManager.stopMonitoringSignificantLocationChanges()
@@ -168,10 +186,21 @@ final class TrackingEngine: NSObject {
         baselineElevation = nil
         altimeterReference = nil
         altimeterRelativeOffset = nil
+        sleepAltimeterRelativeBaseline = nil
+        lastSleepAltimeterSampleDate = nil
+        altitudeWakeMonitor.reset()
+        stationaryAltitudeMonitor.reset()
+        lastSignificantHorizontalMoveDate = nil
         lastAcceptedLocation = nil
         lastAcceptedPoint = nil
+        lastPressureHPa = 0
+        latestMotionActivity = nil
+        navigationEnvironmentController.reset()
+        indoorFloorEstimator.deactivate()
+        navigationEnvironment = .outdoor
+        estimatedIndoorFloor = nil
 
-        NSLog("TrackingEngine: entered Sleeping")
+        NSLog("TrackingEngine: entered Sleeping (significant-change + sleep altimeter active)")
     }
 
     private func enterEvaluating() {
@@ -215,12 +244,22 @@ final class TrackingEngine: NSObject {
         stationarySince = nil
         stopStationaryCheckTimer()
 
+        stopSleepAltimeter()
+        stopSleepMotionMonitoring()
+
         locationManager.allowsBackgroundLocationUpdates = true
         resumeHighPrecisionGPS()
         startMotionActivityUpdates()
-        startAltimeter()
+        startFullAltimeter()
+        altitudeWakeMonitor.reset()
+        stationaryAltitudeMonitor.reset()
+        navigationEnvironmentController.reset()
+        indoorFloorEstimator.deactivate()
+        navigationEnvironment = .outdoor
+        estimatedIndoorFloor = nil
+        applyOutdoorLocationConfiguration()
 
-        NSLog("TrackingEngine: entered Tracking")
+        NSLog("TrackingEngine: entered Tracking (altitude-driven high precision)")
     }
 
     private func enterStationaryWatch() {
@@ -266,6 +305,8 @@ final class TrackingEngine: NSObject {
         guard isStarted else { return }
         guard phase == .tracking || phase == .stationaryWatch else { return }
 
+        latestMotionActivity = activity
+
         if Self.isQualifyingMotion(activity) {
             stationarySince = nil
             if phase == .stationaryWatch {
@@ -309,34 +350,146 @@ final class TrackingEngine: NSObject {
         guard let stationarySince else { return }
         guard phase == .stationaryWatch || phase == .tracking else { return }
 
-        if Date().timeIntervalSince(stationarySince) >= Config.stationaryTimeout {
+        let elapsed = Date().timeIntervalSince(stationarySince)
+        guard elapsed >= Config.stationaryTimeout else { return }
+
+        let altitudeStable = stationaryAltitudeMonitor.isAltitudeStable
+        let horizontallyStill = isHorizontallyStationary
+
+        if altitudeStable && horizontallyStill {
             finalizeCurrentTrackIfNeeded()
             enterSleeping()
+            NSLog(
+                "TrackingEngine: sleep — stationary \(Int(elapsed))s, " +
+                "altitude Δ=\(String(format: "%.2f", stationaryAltitudeMonitor.peakToPeakMeters))m"
+            )
         }
+    }
+
+    private var isHorizontallyStationary: Bool {
+        guard let lastSignificantHorizontalMoveDate else { return true }
+        return Date().timeIntervalSince(lastSignificantHorizontalMoveDate) >= Config.stationaryTimeout
     }
 
     // MARK: - Altimeter
 
-    private func startAltimeter() {
-        guard CMAltimeter.isRelativeAltitudeAvailable() else { return }
+    private func startSleepAltimeter() {
+        guard CMAltimeter.isRelativeAltitudeAvailable(), !isSleepAltimeterActive else { return }
+        isSleepAltimeterActive = true
+        sleepAltimeterRelativeBaseline = nil
+        lastSleepAltimeterSampleDate = nil
 
         altimeter.startRelativeAltitudeUpdates(to: locationQueue) { [weak self] data, error in
             guard let data, error == nil else { return }
             let relative = data.relativeAltitude.doubleValue
+            let pressureHPa = data.pressure.doubleValue * 10
             Task { @MainActor [weak self] in
-                guard let self else { return }
-                if self.altimeterReference == nil {
-                    self.altimeterReference = relative
-                }
-                self.altimeterRelativeOffset = relative - (self.altimeterReference ?? relative)
+                self?.handleSleepAltimeterSample(relativeMeters: relative, pressureHPa: pressureHPa)
             }
         }
     }
 
-    private func stopAltimeter() {
+    private func stopSleepAltimeter() {
+        guard isSleepAltimeterActive else { return }
+        isSleepAltimeterActive = false
+        if !isFullAltimeterActive {
+            altimeter.stopRelativeAltitudeUpdates()
+        }
+        sleepAltimeterRelativeBaseline = nil
+        lastSleepAltimeterSampleDate = nil
+    }
+
+    private func handleSleepAltimeterSample(relativeMeters: Double, pressureHPa: Double) {
+        let now = Date()
+        if let lastSample = lastSleepAltimeterSampleDate,
+           now.timeIntervalSince(lastSample) < Config.sleepAltimeterInterval {
+            return
+        }
+        lastSleepAltimeterSampleDate = now
+        lastPressureHPa = pressureHPa
+
+        if sleepAltimeterRelativeBaseline == nil {
+            sleepAltimeterRelativeBaseline = relativeMeters
+        }
+
+        let deltaFromBaseline = relativeMeters - (sleepAltimeterRelativeBaseline ?? relativeMeters)
+
+        if phase == .sleeping, altitudeWakeMonitor.ingest(relativeMeters: deltaFromBaseline, date: now) {
+            hadSignificantChangeToday = true
+            NSLog("TrackingEngine: altitude wake — Δh ≥ \(Config.altitudeWakeThresholdMeters)m / \(Int(Config.altitudeWakeWindow))s")
+            enterTracking()
+            return
+        }
+
+        if phase == .tracking || phase == .stationaryWatch {
+            stationaryAltitudeMonitor.ingest(relativeMeters: deltaFromBaseline, date: now)
+        }
+    }
+
+    private func startFullAltimeter() {
+        guard CMAltimeter.isRelativeAltitudeAvailable(), !isFullAltimeterActive else { return }
+        isFullAltimeterActive = true
+
+        altimeter.startRelativeAltitudeUpdates(to: locationQueue) { [weak self] data, error in
+            guard let data, error == nil else { return }
+            let relative = data.relativeAltitude.doubleValue
+            let pressureHPa = data.pressure.doubleValue * 10
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.lastPressureHPa = pressureHPa
+                if self.altimeterReference == nil {
+                    self.altimeterReference = relative
+                }
+                self.altimeterRelativeOffset = relative - (self.altimeterReference ?? relative)
+
+                let deltaFromReference = self.altimeterRelativeOffset ?? 0
+                self.stationaryAltitudeMonitor.ingest(relativeMeters: deltaFromReference)
+
+                if self.navigationEnvironment == .indoor {
+                    self.beginIndoorFloorCalibrationIfNeeded(with: self.lastKnownLocation)
+                    self.updateIndoorFloorEstimateIfNeeded()
+                }
+            }
+        }
+    }
+
+    private func stopFullAltimeter() {
+        guard isFullAltimeterActive else { return }
+        isFullAltimeterActive = false
         altimeter.stopRelativeAltitudeUpdates()
         altimeterReference = nil
         altimeterRelativeOffset = nil
+    }
+
+    private func startSleepMotionMonitoring() {
+        guard CMMotionActivityManager.isActivityAvailable() else { return }
+
+        motionActivityManager.startActivityUpdates(to: locationQueue) { [weak self] activity in
+            guard let activity else { return }
+            Task { @MainActor [weak self] in
+                self?.handleSleepMotionActivity(activity)
+            }
+        }
+    }
+
+    private func stopSleepMotionMonitoring() {
+        motionActivityManager.stopActivityUpdates()
+    }
+
+    private func handleSleepMotionActivity(_ activity: CMMotionActivity) {
+        guard phase == .sleeping else { return }
+        guard Self.isQualifyingMotion(activity) else { return }
+
+        hadSignificantChangeToday = true
+        NSLog("TrackingEngine: motion wake — \(Self.motionLabel(activity))")
+        enterTracking()
+    }
+
+    private static func motionLabel(_ activity: CMMotionActivity) -> String {
+        if activity.running { return "running" }
+        if activity.cycling { return "cycling" }
+        if activity.walking { return "walking" }
+        return "motion"
     }
 
     // MARK: - Location Processing
@@ -349,13 +502,178 @@ final class TrackingEngine: NSObject {
             return
         }
 
-        guard phase == .tracking else { return }
+        guard phase == .tracking || phase == .stationaryWatch else { return }
+        guard let latestLocation = locations.last else { return }
+        lastKnownLocation = latestLocation
+
+        evaluateNavigationEnvironment(with: latestLocation)
+        updateHorizontalActivity(latestLocation)
+        sampleChartPointIfNeeded(location: latestLocation)
+
+        guard phase == .tracking, navigationEnvironment == .outdoor else { return }
 
         for location in locations {
             guard shouldAccept(location) else { continue }
             appendLocation(location)
         }
     }
+
+    private func updateHorizontalActivity(_ location: CLLocation) {
+        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= Config.maxHorizontalAccuracy else {
+            return
+        }
+
+        if let last = lastAcceptedLocation {
+            let distance = location.distance(from: last)
+            if distance >= Config.significantHorizontalMove {
+                lastSignificantHorizontalMoveDate = location.timestamp
+                hadSignificantChangeToday = true
+            }
+        } else {
+            lastSignificantHorizontalMoveDate = location.timestamp
+        }
+    }
+
+    private func sampleChartPointIfNeeded(location: CLLocation) {
+        guard phase == .tracking || phase == .stationaryWatch else { return }
+
+        let elevation = fusedElevation(for: location)
+        RecentHistoryBuffer.shared.appendIfNeeded(
+            timestamp: location.timestamp,
+            latitude: location.coordinate.latitude,
+            longitude: location.coordinate.longitude,
+            elevation: elevation,
+            isIndoor: navigationEnvironment == .indoor
+        )
+    }
+
+    // MARK: - Navigation Environment
+
+    private func evaluateNavigationEnvironment(with location: CLLocation) {
+        if NavigationEnvironmentOverrideCenter.isManual {
+            let target = NavigationEnvironmentOverrideCenter.manualEnvironment ?? .outdoor
+            if navigationEnvironment != target {
+                if target == .indoor {
+                    enterIndoorNavigationMode(triggerHaptic: false)
+                } else {
+                    enterOutdoorNavigationMode()
+                }
+            } else if navigationEnvironment == .indoor {
+                beginIndoorFloorCalibrationIfNeeded(with: location)
+                updateIndoorFloorEstimateIfNeeded()
+            }
+            return
+        }
+
+        if let transition = navigationEnvironmentController.evaluateEnvironment(
+            currentLocation: location,
+            currentPressureHPa: lastPressureHPa,
+            motionActivity: latestMotionActivity
+        ) {
+            switch transition {
+            case .indoor:
+                enterIndoorNavigationMode(triggerHaptic: true)
+            case .outdoor:
+                enterOutdoorNavigationMode()
+            }
+        } else if navigationEnvironment == .indoor {
+            beginIndoorFloorCalibrationIfNeeded(with: location)
+            updateIndoorFloorEstimateIfNeeded()
+        }
+    }
+
+    private func enterIndoorNavigationMode(triggerHaptic: Bool) {
+        guard navigationEnvironment != .indoor else {
+            beginIndoorFloorCalibrationIfNeeded(with: lastKnownLocation)
+            updateIndoorFloorEstimateIfNeeded()
+            return
+        }
+
+        navigationEnvironment = .indoor
+        navigationEnvironmentController.adoptIndoorState()
+        indoorFloorEstimator.deactivate()
+        estimatedIndoorFloor = nil
+        beginIndoorFloorCalibrationIfNeeded(with: lastKnownLocation)
+        updateIndoorFloorEstimateIfNeeded()
+        if triggerHaptic {
+            triggerIndoorTransitionHaptic()
+        }
+        applyIndoorLocationConfiguration()
+        NSLog("TrackingEngine: navigation → indoor (floor calibration attempted)")
+    }
+
+    private func enterOutdoorNavigationMode() {
+        guard navigationEnvironment != .outdoor else { return }
+
+        navigationEnvironment = .outdoor
+        estimatedIndoorFloor = nil
+        indoorFloorEstimator.deactivate()
+        navigationEnvironmentController.adoptOutdoorState()
+        applyOutdoorLocationConfiguration()
+        if phase == .tracking {
+            resumeHighPrecisionGPS()
+        }
+        NSLog("TrackingEngine: navigation → outdoor (high-precision tracking restored)")
+    }
+
+    private func beginIndoorFloorCalibrationIfNeeded(with location: CLLocation?) {
+        guard navigationEnvironment == .indoor else { return }
+        guard lastPressureHPa > 0 else { return }
+        guard !indoorFloorEstimator.isCalibrated else { return }
+
+        guard let location else {
+            NSLog("TrackingEngine: indoor calibration deferred (no location)")
+            return
+        }
+
+        switch IndoorFloorCalibrationHelper.resolve(
+            location: location,
+            buildingStore: buildingCalibrationStore
+        ) {
+        case let .calibrated(baseFloor, source, _):
+            indoorFloorEstimator.calibrate(baseFloor: baseFloor, pressureHPa: lastPressureHPa)
+            if source == .persisted, let record = buildingCalibrationStore?.findMatch(near: location)?.record {
+                buildingCalibrationStore?.touch(record, baselinePressureHPa: lastPressureHPa)
+            } else if source == .clFloor {
+                buildingCalibrationStore?.saveCalibration(
+                    location: location,
+                    floor: baseFloor,
+                    pressureHPa: lastPressureHPa
+                )
+            }
+            NSLog("TrackingEngine: floor calibrated base=\(baseFloor) source=\(source.rawValue)")
+        case .needsManual:
+            NSLog("TrackingEngine: indoor floor calibration deferred (awaiting manual input)")
+        }
+    }
+
+    private func updateIndoorFloorEstimateIfNeeded() {
+        guard navigationEnvironment == .indoor, lastPressureHPa > 0 else { return }
+        guard indoorFloorEstimator.isCalibrated else {
+            estimatedIndoorFloor = nil
+            return
+        }
+        estimatedIndoorFloor = indoorFloorEstimator.update(currentPressureHPa: lastPressureHPa)
+            ?? indoorFloorEstimator.estimatedFloor
+    }
+
+    private func applyIndoorLocationConfiguration() {
+        locationManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        locationManager.distanceFilter = Config.indoorDistanceFilter
+    }
+
+    private func applyOutdoorLocationConfiguration() {
+        locationManager.desiredAccuracy = kCLLocationAccuracyBest
+        locationManager.distanceFilter = Config.distanceFilter
+    }
+
+    private func triggerIndoorTransitionHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+
+    // MARK: - GPX Recording
 
     private func shouldAccept(_ location: CLLocation) -> Bool {
         guard location.horizontalAccuracy >= 0,
@@ -383,19 +701,23 @@ final class TrackingEngine: NSObject {
         rolloverDayIfNeeded()
 
         let elevation = fusedElevation(for: location)
-        let point = TrackPoint(
+        let previousElevation = lastAcceptedPoint?.elevation ?? elevation
+        let historyPoint = HistoryPoint(
+            timestamp: location.timestamp,
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude,
             elevation: elevation,
-            timestamp: location.timestamp
+            elevationDelta: elevation - previousElevation,
+            isIndoor: navigationEnvironment == .indoor
         )
 
         do {
-            try gpxWriter.append(point: point)
+            try gpxWriter.append(point: historyPoint)
             pointCountToday += 1
             lastAcceptedLocation = location
-            lastAcceptedPoint = point
-            delegate?.trackingEngine(self, didAppend: point)
+            lastAcceptedPoint = historyPoint
+            RecentHistoryBuffer.shared.ingestRecordedPoint(historyPoint)
+            delegate?.trackingEngine(self, didAppend: historyPoint)
         } catch {
             NSLog("TrackingEngine: GPX write failed: \(error.localizedDescription)")
         }
@@ -537,6 +859,12 @@ private enum Config {
     static let maxVerticalAccuracy: CLLocationAccuracy = 30
     static let minPointDistance: CLLocationDistance = 3
     static let minPointInterval: TimeInterval = 10
+    static let indoorDistanceFilter: CLLocationDistance = 20
+    static let altitudeWakeWindow: TimeInterval = 30
+    static let altitudeWakeThresholdMeters: Double = 2.0
+    static let sleepAltimeterInterval: TimeInterval = 5
+    static let stationaryAltitudeVariation: Double = 0.5
+    static let significantHorizontalMove: CLLocationDistance = 15
 }
 
 private final class GPXTrackWriter: @unchecked Sendable {
@@ -584,7 +912,7 @@ private final class GPXTrackWriter: @unchecked Sendable {
         isHeaderWritten = false
     }
 
-    func append(point: TrackPoint) throws {
+    func append(point: HistoryPoint) throws {
         writeLock.lock()
         defer { writeLock.unlock() }
 
@@ -599,10 +927,15 @@ private final class GPXTrackWriter: @unchecked Sendable {
         }
 
         let timeString = isoFormatter.string(from: point.timestamp)
+        let indoorValue = point.isIndoor ? "true" : "false"
         let fragment = """
             <trkpt lat="\(point.latitude)" lon="\(point.longitude)">
                 <ele>\(String(format: "%.1f", point.elevation))</ele>
                 <time>\(timeString)</time>
+                <extensions>
+                    <altipin:delta>\(String(format: "%.2f", point.elevationDelta))</altipin:delta>
+                    <altipin:indoor>\(indoorValue)</altipin:indoor>
+                </extensions>
             </trkpt>
 
         """
@@ -676,7 +1009,7 @@ private final class GPXTrackWriter: @unchecked Sendable {
         let metadataTime = isoFormatter.string(from: trackDate)
         let header = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <gpx version="1.1" creator="AltiPin" xmlns="http://www.topografix.com/GPX/1/1">
+        <gpx version="1.1" creator="AltiPin" xmlns="http://www.topografix.com/GPX/1/1" xmlns:altipin="https://altipin.app/gpx/1">
             <metadata>
                 <time>\(metadataTime)</time>
             </metadata>

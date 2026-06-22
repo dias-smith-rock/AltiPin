@@ -7,6 +7,8 @@ import Combine
 import CoreLocation
 import CoreMotion
 import Foundation
+import SwiftData
+import UIKit
 
 @MainActor
 final class OutdoorDashboardStore: NSObject, ObservableObject {
@@ -29,14 +31,21 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var magneticFieldZ: Double = 0
     @Published private(set) var magneticFieldStrength: Double = 0
 
+    @Published private(set) var navigationEnvironment: NavigationEnvironment = .outdoor
+    @Published private(set) var estimatedIndoorFloor: Int?
+    @Published private(set) var indoorBaselinePressureHPa: Double?
+    @Published private(set) var navigationEnvironmentDiagnostic: String = "initial"
+    @Published private(set) var needsFloorCalibration = false
+    @Published private(set) var matchedBuildingLabel: String?
+    @Published private(set) var floorCalibrationSource: FloorCalibrationSource?
+    @Published private(set) var navigationEnvironmentControlMode: NavigationEnvironmentControlMode = .automatic
+
     @Published private(set) var isSpeedSessionActive = false
     @Published private(set) var speedSessionDuration: TimeInterval = 0
     @Published private(set) var speedSessionDistanceMeters: Double = 0
     @Published private(set) var speedSessionMaxSpeedKmh: Double = 0
     @Published private(set) var speedSessionElevationGainMeters: Double = 0
     @Published private(set) var recentHistoryPoints: [HistoryPoint] = []
-
-    private let maxRecentHistoryPoints = 20
 
     var speedSessionAverageSpeedKmh: Double {
         guard speedSessionDuration > 0 else { return 0 }
@@ -47,7 +56,11 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
 
     private let locationManager = CLLocationManager()
     private let altimeter = CMAltimeter()
+    private let motionActivityManager = CMMotionActivityManager()
     private let motionManager = CMMotionManager()
+    private let navigationEnvironmentController = NavigationEnvironmentController()
+    private let indoorFloorEstimator = IndoorFloorEstimator()
+    private var buildingCalibrationStore: BuildingCalibrationStore?
     private let sensorQueue: OperationQueue = {
         let queue = OperationQueue()
         queue.name = "com.goodcraft.AltiPin.dashboard"
@@ -67,6 +80,9 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private var speedSessionLastSample: CLLocation?
     private var speedSessionTimer: Timer?
     private var lastHistoryPointSample: CLLocation?
+    private var latestMotionActivity: CMMotionActivity?
+    private var lastKnownLocation: CLLocation?
+    private var recentHistoryCancellable: AnyCancellable?
 
     override init() {
         super.init()
@@ -75,6 +91,43 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         locationManager.distanceFilter = 3
         locationManager.headingFilter = 1
         locationManager.activityType = .fitness
+
+        recentHistoryPoints = RecentHistoryBuffer.shared.points
+        recentHistoryCancellable = RecentHistoryBuffer.shared.$points
+            .receive(on: RunLoop.main)
+            .sink { [weak self] points in
+                self?.recentHistoryPoints = points
+            }
+    }
+
+    func configure(modelContext: ModelContext) {
+        buildingCalibrationStore = BuildingCalibrationStore(modelContext: modelContext)
+    }
+
+    var isManualNavigationOverride: Bool {
+        navigationEnvironmentControlMode.isManual
+    }
+
+    var isIndoorFloorCalibrated: Bool {
+        navigationEnvironment == .indoor && indoorFloorEstimator.isCalibrated
+    }
+
+    /// 切换环境判定模式：自动 / 手动室内 / 手动室外。
+    func setNavigationEnvironmentControlMode(_ mode: NavigationEnvironmentControlMode) {
+        navigationEnvironmentControlMode = mode
+        NavigationEnvironmentOverrideCenter.apply(mode)
+
+        switch mode {
+        case .automatic:
+            if let location = lastKnownLocation {
+                evaluateNavigationEnvironment(with: location, triggerHaptic: false)
+            } else {
+                navigationEnvironmentDiagnostic = "automatic (awaiting location)"
+            }
+        case let .manual(environment):
+            applyNavigationEnvironment(environment, location: lastKnownLocation, triggerHaptic: true)
+            navigationEnvironmentDiagnostic = "\(environment.rawValue) (manual override)"
+        }
     }
 
     func startMonitoring() {
@@ -86,14 +139,26 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         cumulativeDistanceMeters = 0
         lastDistanceSample = nil
         lastHistoryPointSample = nil
-        recentHistoryPoints = []
+        recentHistoryPoints = RecentHistoryBuffer.shared.points
         gpsBaselineAltitude = nil
         altimeterReference = nil
+        navigationEnvironmentController.reset()
+        indoorFloorEstimator.deactivate()
+        navigationEnvironment = .outdoor
+        estimatedIndoorFloor = nil
+        indoorBaselinePressureHPa = nil
+        needsFloorCalibration = false
+        matchedBuildingLabel = nil
+        floorCalibrationSource = nil
+        navigationEnvironmentControlMode = .automatic
+        NavigationEnvironmentOverrideCenter.reset()
+        latestMotionActivity = nil
 
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
         locationManager.startUpdatingHeading()
         startAltimeter()
+        startMotionActivityUpdates()
         startDurationTimer()
         startDeviceMotion()
         startMagnetometer()
@@ -110,6 +175,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         locationManager.stopUpdatingLocation()
         locationManager.stopUpdatingHeading()
         altimeter.stopRelativeAltitudeUpdates()
+        motionActivityManager.stopActivityUpdates()
         motionManager.stopDeviceMotionUpdates()
         motionManager.stopMagnetometerUpdates()
         durationTimer?.invalidate()
@@ -146,6 +212,40 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         } else {
             startSpeedSession()
         }
+    }
+
+    /// 进入海拔 Tab 时调用：基于最新定位/气压即时评估室内外，并请求一次 fresh 定位。
+    func refreshNavigationEnvironmentForAltitudeTab() {
+        if !isMonitoring {
+            startMonitoring()
+        }
+
+        applySnapshotAssessmentForAltitudeTab()
+        queryRecentMotionActivityForAssessment()
+        locationManager.requestLocation()
+    }
+
+    /// 用户确认当前所在楼层（首次进入室内且无 CLFloor / 历史记录时）。
+    func confirmFloorCalibration(floor: Int, label: String?) {
+        guard navigationEnvironment == .indoor, pressureHPa > 0 else { return }
+        applyFloorCalibration(
+            baseFloor: floor,
+            pressureHPa: pressureHPa,
+            label: label,
+            source: .manual,
+            persist: true
+        )
+    }
+
+    /// 重新校准楼层基准（已在室内且需修正时）。
+    func recalibrateIndoorFloor(to floor: Int, label: String?) {
+        confirmFloorCalibration(floor: floor, label: label)
+    }
+
+    /// 供 UI 展示的环境诊断摘要。
+    var navigationEnvironmentDebugSummary: String {
+        let floorText = estimatedIndoorFloor.map { "\($0)F" } ?? "—"
+        return "\(navigationEnvironmentDiagnostic) · floor=\(floorText)"
     }
 
     var currentLocation: CLLocation? {
@@ -199,6 +299,22 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
                     self.elevationMeters = baseline + offset
                 }
                 self.pressureHPa = pressureKPa * 10
+
+                if self.navigationEnvironment == .indoor {
+                    self.beginIndoorFloorCalibrationIfNeeded(with: self.lastKnownLocation)
+                    self.updateIndoorFloorEstimateIfNeeded()
+                }
+            }
+        }
+    }
+
+    private func startMotionActivityUpdates() {
+        guard CMMotionActivityManager.isActivityAvailable() else { return }
+
+        motionActivityManager.startActivityUpdates(to: sensorQueue) { [weak self] activity in
+            guard let activity else { return }
+            Task { @MainActor [weak self] in
+                self?.latestMotionActivity = activity
             }
         }
     }
@@ -277,10 +393,13 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     }
 
     private func ingestLocation(_ location: CLLocation) {
+        lastKnownLocation = location
         latitude = location.coordinate.latitude
         longitude = location.coordinate.longitude
         horizontalAccuracy = location.horizontalAccuracy
         verticalAccuracy = location.verticalAccuracy
+
+        evaluateNavigationEnvironment(with: location)
 
         if location.speed >= 0 {
             speedKmh = location.speed * 3.6
@@ -309,29 +428,225 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         appendHistoryPointIfNeeded(location)
     }
 
+    private func evaluateNavigationEnvironment(with location: CLLocation, triggerHaptic: Bool = true) {
+        if NavigationEnvironmentOverrideCenter.isManual {
+            enforceManualNavigationEnvironment(triggerHaptic: false)
+            if navigationEnvironment == .indoor {
+                beginIndoorFloorCalibrationIfNeeded(with: location)
+                updateIndoorFloorEstimateIfNeeded()
+            }
+            if let manual = NavigationEnvironmentOverrideCenter.manualEnvironment {
+                navigationEnvironmentDiagnostic = "\(manual.rawValue) (manual override)"
+            }
+            return
+        }
+
+        if let transition = navigationEnvironmentController.evaluateEnvironment(
+            currentLocation: location,
+            currentPressureHPa: pressureHPa,
+            motionActivity: latestMotionActivity
+        ) {
+            applyNavigationTransition(transition, triggerHaptic: triggerHaptic)
+        } else if navigationEnvironment == .indoor {
+            beginIndoorFloorCalibrationIfNeeded(with: location)
+            updateIndoorFloorEstimateIfNeeded()
+        }
+
+        syncNavigationDiagnosticFromController()
+    }
+
+    private func applySnapshotAssessmentForAltitudeTab() {
+        guard let location = lastKnownLocation else { return }
+
+        if NavigationEnvironmentOverrideCenter.isManual {
+            enforceManualNavigationEnvironment(triggerHaptic: false)
+            if let manual = NavigationEnvironmentOverrideCenter.manualEnvironment {
+                navigationEnvironmentDiagnostic = "\(manual.rawValue) (manual override)"
+            }
+            return
+        }
+
+        let assessment = navigationEnvironmentController.snapshotEnvironment(
+            currentLocation: location,
+            motionActivity: latestMotionActivity
+        )
+        applyNavigationEnvironment(assessment.environment, location: location, triggerHaptic: false)
+        navigationEnvironmentDiagnostic = "\(assessment.environment.rawValue) (\(assessment.reason))"
+    }
+
+    private func assessNavigationEnvironmentUsingCachedData(triggerHaptic: Bool) {
+        guard let location = lastKnownLocation else { return }
+        evaluateNavigationEnvironment(with: location, triggerHaptic: triggerHaptic)
+    }
+
+    private func applyNavigationEnvironment(
+        _ target: NavigationEnvironment,
+        location: CLLocation? = nil,
+        triggerHaptic: Bool
+    ) {
+        let resolvedLocation = location ?? lastKnownLocation
+
+        guard target != navigationEnvironment else {
+            if target == .indoor {
+                beginIndoorFloorCalibrationIfNeeded(with: resolvedLocation)
+                updateIndoorFloorEstimateIfNeeded()
+            }
+            return
+        }
+
+        switch target {
+        case .indoor:
+            navigationEnvironment = .indoor
+            navigationEnvironmentController.adoptIndoorState()
+            indoorFloorEstimator.deactivate()
+            needsFloorCalibration = false
+            matchedBuildingLabel = nil
+            floorCalibrationSource = nil
+            estimatedIndoorFloor = nil
+            indoorBaselinePressureHPa = nil
+            beginIndoorFloorCalibrationIfNeeded(with: resolvedLocation)
+            updateIndoorFloorEstimateIfNeeded()
+            if triggerHaptic {
+                triggerIndoorTransitionHaptic()
+            }
+        case .outdoor:
+            navigationEnvironment = .outdoor
+            estimatedIndoorFloor = nil
+            indoorBaselinePressureHPa = nil
+            needsFloorCalibration = false
+            matchedBuildingLabel = nil
+            floorCalibrationSource = nil
+            indoorFloorEstimator.deactivate()
+            navigationEnvironmentController.adoptOutdoorState()
+        }
+    }
+
+    private func applyNavigationTransition(
+        _ transition: NavigationEnvironment,
+        triggerHaptic: Bool
+    ) {
+        applyNavigationEnvironment(transition, location: lastKnownLocation, triggerHaptic: triggerHaptic)
+    }
+
+    private func enforceManualNavigationEnvironment(triggerHaptic: Bool) {
+        guard let target = NavigationEnvironmentOverrideCenter.manualEnvironment else { return }
+        applyNavigationEnvironment(target, location: lastKnownLocation, triggerHaptic: triggerHaptic)
+    }
+
+    private func beginIndoorFloorCalibrationIfNeeded(with location: CLLocation?) {
+        guard navigationEnvironment == .indoor else { return }
+        guard pressureHPa > 0 else { return }
+        guard !indoorFloorEstimator.isCalibrated else { return }
+
+        guard let location else {
+            needsFloorCalibration = true
+            return
+        }
+
+        switch IndoorFloorCalibrationHelper.resolve(
+            location: location,
+            buildingStore: buildingCalibrationStore
+        ) {
+        case let .calibrated(baseFloor, source, label):
+            applyFloorCalibration(
+                baseFloor: baseFloor,
+                pressureHPa: pressureHPa,
+                label: label,
+                source: source,
+                persist: source != .persisted
+            )
+            if source == .persisted, let record = buildingCalibrationStore?.findMatch(near: location)?.record {
+                buildingCalibrationStore?.touch(record, baselinePressureHPa: pressureHPa)
+            }
+        case .needsManual:
+            needsFloorCalibration = true
+            NSLog("OutdoorDashboardStore: indoor floor calibration required (no CLFloor / history)")
+        }
+    }
+
+    private func applyFloorCalibration(
+        baseFloor: Int,
+        pressureHPa: Double,
+        label: String?,
+        source: FloorCalibrationSource,
+        persist: Bool
+    ) {
+        indoorFloorEstimator.calibrate(baseFloor: baseFloor, pressureHPa: pressureHPa)
+        indoorBaselinePressureHPa = pressureHPa
+        estimatedIndoorFloor = indoorFloorEstimator.estimatedFloor
+        needsFloorCalibration = false
+        matchedBuildingLabel = label
+        floorCalibrationSource = source
+
+        if persist, let location = lastKnownLocation ?? currentLocation {
+            let savedLabel = label ?? matchedBuildingLabel
+            buildingCalibrationStore?.saveCalibration(
+                location: location,
+                floor: baseFloor,
+                pressureHPa: pressureHPa,
+                label: savedLabel
+            )
+            if savedLabel != nil {
+                matchedBuildingLabel = savedLabel
+            }
+        }
+
+        NSLog(
+            "OutdoorDashboardStore: floor calibrated base=\(baseFloor) source=\(source.rawValue) " +
+            "label=\(label ?? "—")"
+        )
+    }
+
+    private func updateIndoorFloorEstimateIfNeeded() {
+        guard navigationEnvironment == .indoor, pressureHPa > 0 else { return }
+        guard indoorFloorEstimator.isCalibrated else {
+            estimatedIndoorFloor = nil
+            return
+        }
+        estimatedIndoorFloor = indoorFloorEstimator.update(currentPressureHPa: pressureHPa)
+            ?? indoorFloorEstimator.estimatedFloor
+    }
+
+    private func syncNavigationDiagnosticFromController() {
+        let assessment = navigationEnvironmentController.lastAssessment
+        navigationEnvironmentDiagnostic = "\(assessment.environment.rawValue) (\(assessment.reason))"
+    }
+
+    private func queryRecentMotionActivityForAssessment() {
+        guard CMMotionActivityManager.isActivityAvailable() else { return }
+
+        let from = Date().addingTimeInterval(-120)
+        motionActivityManager.queryActivityStarting(from: from, to: .now, to: sensorQueue) { [weak self] activities, _ in
+            guard let latest = activities?.last else { return }
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                self.latestMotionActivity = latest
+                self.assessNavigationEnvironmentUsingCachedData(triggerHaptic: false)
+            }
+        }
+    }
+
+    private func triggerIndoorTransitionHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+
     private func appendHistoryPointIfNeeded(_ location: CLLocation) {
         guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 else { return }
 
-        if let last = lastHistoryPointSample {
-            let interval = location.timestamp.timeIntervalSince(last.timestamp)
-            let distance = location.distance(from: last)
-            if distance < 3, interval < 8 { return }
-        }
-
         let elevation = elevationMeters > 0 ? elevationMeters : location.altitude
-        let point = HistoryPoint(
+        let isIndoor = navigationEnvironment == .indoor
+
+        if RecentHistoryBuffer.shared.appendIfNeeded(
             timestamp: location.timestamp,
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude,
-            elevation: elevation
-        )
-
-        recentHistoryPoints.append(point)
-        if recentHistoryPoints.count > maxRecentHistoryPoints {
-            recentHistoryPoints.removeFirst(recentHistoryPoints.count - maxRecentHistoryPoints)
+            elevation: elevation,
+            isIndoor: isIndoor
+        ) != nil {
+            lastHistoryPointSample = location
         }
-
-        lastHistoryPointSample = location
     }
 
     private func ingestSpeedSessionSample(_ location: CLLocation) {
@@ -391,12 +706,17 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         store.magneticFieldY = -8.3
         store.magneticFieldZ = 41.2
         store.magneticFieldStrength = 47.8
+        store.navigationEnvironment = .indoor
+        store.confirmFloorCalibration(floor: 3, label: "预览楼栋")
         store.isSpeedSessionActive = true
         store.speedSessionDuration = 129
         store.speedSessionDistanceMeters = 540
         store.speedSessionMaxSpeedKmh = 7.9
         store.speedSessionElevationGainMeters = 12.4
-        store.recentHistoryPoints = HistoryPoint.mockPoints
+        RecentHistoryBuffer.shared.reset()
+        for point in HistoryPoint.mockPoints {
+            RecentHistoryBuffer.shared.ingestRecordedPoint(point)
+        }
         return store
     }
 
