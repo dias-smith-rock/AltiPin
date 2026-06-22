@@ -5,6 +5,7 @@
 //  脚印 FIFO 窗口的 SwiftData 持久化。
 //
 
+import CoreLocation
 import Foundation
 import SwiftData
 
@@ -32,6 +33,26 @@ final class FootprintStore {
         let entity = FootprintEntity(from: footprint)
         modelContext.insert(entity)
         trimToMax(FootprintConfig.maxFootprints)
+        try? modelContext.save()
+    }
+
+    func update(_ footprint: FootprintPoint) {
+        let targetID = footprint.id
+        var descriptor = FetchDescriptor<FootprintEntity>(
+            predicate: #Predicate { $0.id == targetID }
+        )
+        descriptor.fetchLimit = 1
+
+        guard let entity = try? modelContext.fetch(descriptor).first else {
+            save(footprint)
+            return
+        }
+
+        entity.latitude = footprint.coordinate.latitude
+        entity.longitude = footprint.coordinate.longitude
+        entity.elevation = footprint.elevation
+        entity.timestamp = footprint.timestamp
+        entity.isIndoor = footprint.isIndoor
         try? modelContext.save()
     }
 

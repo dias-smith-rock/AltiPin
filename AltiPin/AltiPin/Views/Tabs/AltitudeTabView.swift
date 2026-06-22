@@ -9,7 +9,7 @@ import SwiftUI
 struct AltitudeTabView: View {
     @ObservedObject var store: OutdoorDashboardStore
     @ObservedObject var weatherService: CompassWeatherService
-    @StateObject private var footprintEngine = FootprintTrackingEngine.shared
+    @ObservedObject private var footprintEngine = FootprintTrackingEngine.shared
 
     @State private var showSettings = false
     @State private var showFloorCalibration = false
@@ -72,18 +72,17 @@ struct AltitudeTabView: View {
         .oledTabBackground()
         .onAppear {
             store.refreshNavigationEnvironmentForAltitudeTab()
-            bootstrapFootprintHistory()
+            Task { @MainActor in
+                bootstrapFootprintHistory()
+            }
             refreshWeatherIfNeeded()
         }
         .onChange(of: store.latitude) { _, _ in
-            seedFootprintIfNeeded()
+            scheduleFootprintSideEffects()
             refreshWeatherIfNeeded()
         }
-        .onChange(of: store.elevationMeters) { _, _ in
-            seedFootprintIfNeeded()
-        }
         .onChange(of: store.horizontalAccuracy) { _, _ in
-            seedFootprintIfNeeded()
+            scheduleFootprintSideEffects()
         }
         .onChange(of: store.longitude) { _, _ in
             refreshWeatherIfNeeded()
@@ -530,6 +529,12 @@ struct AltitudeTabView: View {
         return "\(Int(degrees.rounded()))°"
     }
 
+    private func scheduleFootprintSideEffects() {
+        Task { @MainActor in
+            seedFootprintIfNeeded()
+        }
+    }
+
     private func bootstrapFootprintHistory() {
         footprintEngine.reloadFromStore()
 
@@ -551,10 +556,9 @@ struct AltitudeTabView: View {
     }
 
     private func seedFootprintIfNeeded() {
-        guard footprintEngine.recentFootprints.isEmpty else { return }
         guard let location = store.currentLocation else { return }
 
-        footprintEngine.seedInitialFootprintIfNeeded(
+        footprintEngine.persistCurrentFootprintIfNeeded(
             location: location,
             elevation: store.resolvedElevation(for: location),
             isIndoor: store.navigationEnvironment == .indoor

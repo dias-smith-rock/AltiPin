@@ -69,7 +69,7 @@ struct FootprintHistoryChartView: View {
     }
 
     private var plottableBySlot: [Int: FootprintPlottable] {
-        Dictionary(uniqueKeysWithValues: plottables.map { ($0.slot, $0) })
+        Dictionary(plottables.map { ($0.slot, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     private var maxElevation: Double? {
@@ -323,9 +323,15 @@ struct FootprintHistoryChartView: View {
     }
 
     private func elevationLabel(for elevation: Double) -> some View {
-        Text("\(Int(elevation.rounded()))m")
-            .font(.caption2.weight(.medium))
-            .foregroundStyle(AltitudeTheme.accent)
+        Group {
+            if elevation.isFinite {
+                Text("\(Int(elevation.rounded()))m")
+            } else {
+                Text("—")
+            }
+        }
+        .font(.caption2.weight(.medium))
+        .foregroundStyle(AltitudeTheme.accent)
     }
 
     // MARK: - Helpers

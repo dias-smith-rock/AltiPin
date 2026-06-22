@@ -35,10 +35,6 @@ enum FootprintTriggerEvaluator {
         lastFootprintCommittedAt: Date?,
         now: Date = .now
     ) -> FootprintTriggerEvaluation {
-        guard lastFootprint != nil else {
-            return FootprintTriggerEvaluation(shouldCommit: true, reason: .seed)
-        }
-
         guard let lastFootprint else {
             return FootprintTriggerEvaluation(shouldCommit: false, reason: nil)
         }
@@ -63,5 +59,59 @@ enum FootprintTriggerEvaluator {
         }
 
         return FootprintTriggerEvaluation(shouldCommit: false, reason: nil)
+    }
+
+    /// 水平与垂直偏移均未超阈时，可原地更新末条脚印而非新增。
+    static func isWithinUpsertThresholds(
+        currentLocation: CLLocation,
+        currentElevation: Double,
+        lastFootprint: FootprintPoint
+    ) -> Bool {
+        let verticalDelta = abs(currentElevation - lastFootprint.elevation)
+        let lastLocation = CLLocation(
+            latitude: lastFootprint.coordinate.latitude,
+            longitude: lastFootprint.coordinate.longitude
+        )
+        let horizontalDelta = currentLocation.distance(from: lastLocation)
+        return verticalDelta < FootprintConfig.verticalThresholdMeters
+            && horizontalDelta < FootprintConfig.horizontalThresholdMeters
+    }
+
+    /// 末条脚印 upsert 前判定：是否有必要写入 DB（有意义变化或到达刷新间隔）。
+    static func shouldPersistUpdate(
+        candidate: FootprintPoint,
+        lastPersisted: FootprintPoint?,
+        lastPersistedAt: Date?,
+        now: Date = .now
+    ) -> Bool {
+        guard let lastPersisted else { return true }
+
+        if candidate.isIndoor != lastPersisted.isIndoor {
+            return true
+        }
+
+        let elevationDelta = abs(candidate.elevation - lastPersisted.elevation)
+        if elevationDelta >= FootprintConfig.persistMinElevationDeltaMeters {
+            return true
+        }
+
+        let lastLocation = CLLocation(
+            latitude: lastPersisted.coordinate.latitude,
+            longitude: lastPersisted.coordinate.longitude
+        )
+        let candidateLocation = CLLocation(
+            latitude: candidate.coordinate.latitude,
+            longitude: candidate.coordinate.longitude
+        )
+        if candidateLocation.distance(from: lastLocation) >= FootprintConfig.persistMinHorizontalDeltaMeters {
+            return true
+        }
+
+        if let lastPersistedAt,
+           now.timeIntervalSince(lastPersistedAt) >= FootprintConfig.persistMinIntervalSeconds {
+            return true
+        }
+
+        return false
     }
 }

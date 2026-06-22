@@ -19,6 +19,8 @@ final class FootprintTrackingEngine: ObservableObject {
 
     private var footprintStore: FootprintStore?
     private var lastFootprintCommittedAt: Date?
+    private var lastPersistedFootprint: FootprintPoint?
+    private var lastPersistedAt: Date?
     private var isMotionGateOpen = false
     private var isConfigured = false
 
@@ -38,6 +40,7 @@ final class FootprintTrackingEngine: ObservableObject {
         let loaded = footprintStore.loadRecent()
         recentFootprints = loaded
         lastFootprintCommittedAt = loaded.last?.timestamp
+        syncPersistState(from: loaded.last)
 
         NSLog("FootprintTrackingEngine: reload count=\(loaded.count)")
     }
@@ -63,6 +66,7 @@ final class FootprintTrackingEngine: ObservableObject {
         footprintStore?.replaceAll(with: footprints)
         recentFootprints = footprints
         lastFootprintCommittedAt = footprints.last?.timestamp
+        syncPersistState(from: footprints.last)
 
         NSLog("FootprintTrackingEngine: backfill from history \(footprints.count) points")
     }
@@ -70,6 +74,8 @@ final class FootprintTrackingEngine: ObservableObject {
     func reset() {
         recentFootprints = []
         lastFootprintCommittedAt = nil
+        lastPersistedFootprint = nil
+        lastPersistedAt = nil
         isMotionGateOpen = false
 
         if let footprintStore {
@@ -77,13 +83,12 @@ final class FootprintTrackingEngine: ObservableObject {
         }
     }
 
-    /// 无脚印时，将当前位置海拔作为首个种子脚印（不依赖运动门控）。
-    func seedInitialFootprintIfNeeded(
+    /// 将当前位置/海拔写入脚印库：阈值内更新末条，超阈或空库则新增（不依赖运动门控）。
+    func persistCurrentFootprintIfNeeded(
         location: CLLocation,
         elevation: Double,
         isIndoor: Bool
     ) {
-        guard recentFootprints.isEmpty else { return }
         guard location.horizontalAccuracy >= 0 else { return }
 
         commitFootprint(
@@ -129,6 +134,22 @@ final class FootprintTrackingEngine: ObservableObject {
 
     // MARK: - Private
 
+    private enum FootprintWriteMode {
+        case inserted
+        case updated
+        case skipped
+    }
+
+    private func syncPersistState(from footprint: FootprintPoint?) {
+        lastPersistedFootprint = footprint
+        lastPersistedAt = footprint?.timestamp
+    }
+
+    private func markPersisted(_ footprint: FootprintPoint) {
+        lastPersistedFootprint = footprint
+        lastPersistedAt = Date()
+    }
+
     private func deduplicatedFootprints(_ footprints: [FootprintPoint]) -> [FootprintPoint] {
         guard footprints.count >= 2 else { return footprints }
 
@@ -145,12 +166,47 @@ final class FootprintTrackingEngine: ObservableObject {
         return result
     }
 
+    @discardableResult
     private func commitFootprint(
         location: CLLocation,
         elevation: Double,
         isIndoor: Bool,
         reason: FootprintTriggerReason
-    ) {
+    ) -> FootprintWriteMode {
+        if let last = recentFootprints.last,
+           FootprintTriggerEvaluator.isWithinUpsertThresholds(
+               currentLocation: location,
+               currentElevation: elevation,
+               lastFootprint: last
+           ) {
+            let updated = FootprintPoint(
+                id: last.id,
+                coordinate: location.coordinate,
+                elevation: elevation,
+                timestamp: location.timestamp,
+                isIndoor: isIndoor
+            )
+
+            guard FootprintTriggerEvaluator.shouldPersistUpdate(
+                candidate: updated,
+                lastPersisted: lastPersistedFootprint,
+                lastPersistedAt: lastPersistedAt
+            ) else {
+                return .skipped
+            }
+
+            recentFootprints[recentFootprints.count - 1] = updated
+            lastFootprintCommittedAt = updated.timestamp
+            footprintStore?.update(updated)
+            markPersisted(updated)
+
+            NSLog(
+                "FootprintTrackingEngine: updated \(reason.rawValue) " +
+                "ele=\(String(format: "%.1f", elevation))m count=\(recentFootprints.count)"
+            )
+            return .updated
+        }
+
         let footprint = FootprintPoint(
             coordinate: location.coordinate,
             elevation: elevation,
@@ -165,10 +221,12 @@ final class FootprintTrackingEngine: ObservableObject {
 
         lastFootprintCommittedAt = footprint.timestamp
         footprintStore?.save(footprint)
+        markPersisted(footprint)
 
         NSLog(
-            "FootprintTrackingEngine: committed \(reason.rawValue) " +
+            "FootprintTrackingEngine: inserted \(reason.rawValue) " +
             "ele=\(String(format: "%.1f", elevation))m count=\(recentFootprints.count)"
         )
+        return .inserted
     }
 }

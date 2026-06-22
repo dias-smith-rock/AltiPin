@@ -39,6 +39,11 @@ enum FootprintConfig {
     static let verticalThresholdMeters = 3.0
     static let horizontalThresholdMeters = 50.0
     static let timeCapSeconds: TimeInterval = 300
+
+    /// 原地更新末条脚印时的持久化节流（与触发阈值分离）。
+    static let persistMinIntervalSeconds: TimeInterval = 60
+    static let persistMinElevationDeltaMeters = 0.3
+    static let persistMinHorizontalDeltaMeters = 2.0
 }
 
 extension Array where Element == FootprintPoint {

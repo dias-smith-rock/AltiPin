@@ -323,10 +323,6 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
                     self.beginIndoorFloorCalibrationIfNeeded(with: self.lastKnownLocation)
                     self.updateIndoorFloorEstimateIfNeeded()
                 }
-
-                if let location = self.lastKnownLocation {
-                    self.ingestFootprintIfNeeded(location: location)
-                }
             }
         }
     }
@@ -449,7 +445,9 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         }
 
         appendHistoryPointIfNeeded(location)
-        ingestFootprintIfNeeded(location: location)
+        Task { @MainActor in
+            self.ingestFootprintIfNeeded(location: location)
+        }
     }
 
     private func ingestFootprintIfNeeded(location: CLLocation) {
@@ -458,13 +456,11 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         let elevation = resolvedElevation(for: location)
         let engine = FootprintTrackingEngine.shared
 
-        if engine.recentFootprints.isEmpty {
-            engine.seedInitialFootprintIfNeeded(
-                location: location,
-                elevation: elevation,
-                isIndoor: navigationEnvironment == .indoor
-            )
-        }
+        engine.persistCurrentFootprintIfNeeded(
+            location: location,
+            elevation: elevation,
+            isIndoor: navigationEnvironment == .indoor
+        )
 
         engine.ingest(
             location: location,
