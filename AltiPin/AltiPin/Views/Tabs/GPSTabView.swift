@@ -59,7 +59,7 @@ struct GPSTabView: View {
 
     private var gpsHeader: some View {
         HStack(spacing: 10) {
-            Text("GPS测速")
+            Text("测速")
                 .font(.headline)
                 .foregroundStyle(.white.opacity(0.9))
 

@@ -2,7 +2,7 @@
 //  FootprintTrackingEngine.swift
 //  AltiPin
 //
-//  脚印驱动型海拔采集引擎：双重位移阈值 + FIFO 20 窗口。
+//  脚印驱动型海拔采集引擎：双重位移阈值 + FIFO 10 窗口。
 //
 
 import Combine

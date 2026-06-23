@@ -35,7 +35,7 @@ struct FootprintPoint: Identifiable, Equatable {
 }
 
 enum FootprintConfig {
-    static let maxFootprints = 20
+    static let maxFootprints = 10
     static let verticalThresholdMeters = 3.0
     static let horizontalThresholdMeters = 50.0
     static let timeCapSeconds: TimeInterval = 300
@@ -47,7 +47,7 @@ enum FootprintConfig {
 }
 
 extension Array where Element == FootprintPoint {
-    /// 固定 20 槽窗口内的 X 轴槽位（0-based），部分填充时从右侧「当前」向左生长。
+    /// 固定 10 槽窗口内的 X 轴槽位（0-based），部分填充时从右侧「当前」向左生长。
     func chartSlotIndex(for footprint: FootprintPoint) -> Int? {
         guard let index = firstIndex(where: { $0.id == footprint.id }) else { return nil }
         return (FootprintConfig.maxFootprints - count) + index

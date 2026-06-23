@@ -36,7 +36,7 @@ struct MainTabView: View {
 
             GPSTabView(store: store)
                 .tabItem {
-                    Label("GPS", systemImage: "location.fill")
+                    Label("测速", systemImage: "speedometer")
                 }
                 .tag(AppTab.gps)
 

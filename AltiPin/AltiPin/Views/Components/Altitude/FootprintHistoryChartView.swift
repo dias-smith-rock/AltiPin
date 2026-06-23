@@ -2,7 +2,7 @@
 //  FootprintHistoryChartView.swift
 //  AltiPin
 //
-//  最近 20 次历史脚印足迹曲线图（等间距 + Scrubbing）。
+//  最近 10 次历史脚印足迹曲线图（等间距 + Scrubbing）。
 //
 
 import Charts
