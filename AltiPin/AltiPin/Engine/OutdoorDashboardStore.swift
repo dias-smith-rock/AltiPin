@@ -801,6 +801,24 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         speedSessionLastSample = location
     }
 
+    #if DEBUG
+    func applyDebugSimulatorTeamLocationIfNeeded() {
+        #if targetEnvironment(simulator)
+        guard latitude == 0, longitude == 0 else { return }
+
+        let track = DebugTeamFixtures.taiWaiMockTrack()
+        guard let latest = track.last else { return }
+
+        latitude = latest.latitude
+        longitude = latest.longitude
+        elevationMeters = latest.elevation
+        horizontalAccuracy = 5
+        verticalAccuracy = 8
+        recentHistoryPoints = track
+        #endif
+    }
+    #endif
+
     static func directionName(for degrees: Double) -> String {
         let normalized = (degrees.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
         let names = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]

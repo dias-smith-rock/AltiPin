@@ -72,6 +72,9 @@ struct ActivityTabView: View {
             }
             .onAppear {
                 ensureNickname()
+                #if DEBUG
+                applyDebugSimulatorSetupIfNeeded()
+                #endif
                 syncSelfLocation()
             }
             .onDisappear {
@@ -110,6 +113,15 @@ struct ActivityTabView: View {
         UISelectionFeedbackGenerator().selectionChanged()
         isMapFullscreen.toggle()
     }
+
+    #if DEBUG
+    private func applyDebugSimulatorSetupIfNeeded() {
+        #if targetEnvironment(simulator)
+        store.applyDebugSimulatorTeamLocationIfNeeded()
+        teamSession.configureDebugSimulatorHostIfNeeded(nickname: activityNickname)
+        #endif
+    }
+    #endif
 
     // MARK: - Metrics Overlay
 

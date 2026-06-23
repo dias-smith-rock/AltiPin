@@ -110,6 +110,41 @@ final class TeamSessionStore: ObservableObject {
         visibleMemberIDs = []
     }
 
+    #if DEBUG
+    /// 模拟器 Debug：本地 mock 宿主房间（不连接 Supabase），定位香港大围附近。
+    func configureDebugSimulatorHostIfNeeded(nickname: String) {
+        #if targetEnvironment(simulator)
+        guard !isInRoom else { return }
+
+        let track = DebugTeamFixtures.taiWaiMockTrack()
+        guard let latest = track.last else { return }
+
+        let selfMember = TeamMember(
+            id: UUID(),
+            nickname: nickname,
+            color: TeamMember.color(for: 0),
+            isSelf: true,
+            recentPoints: track,
+            currentCoordinate: latest.coordinate,
+            elevation: latest.elevation,
+            lastSeen: .now
+        )
+
+        selfMemberID = selfMember.id
+        roomCode = DebugTeamFixtures.roomCode
+        members = [selfMember]
+        visibleMemberIDs = [selfMember.id]
+        connectionState = .connected
+        lastConnectionError = nil
+
+        TeamRelayLogger.log(
+            "debug simulator host mock room=\(DebugTeamFixtures.roomCode) " +
+            "at \(String(format: "%.4f", latest.latitude)),\(String(format: "%.4f", latest.longitude))"
+        )
+        #endif
+    }
+    #endif
+
     // MARK: - Private
 
     private static func makeDefaultRelay() -> TeamRelayClient {
