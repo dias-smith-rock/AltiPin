@@ -14,6 +14,8 @@ struct ActivityTabView: View {
 
     @State private var showFaceToFaceSheet = false
     @State private var isMapFullscreen = false
+    @State private var showResetConfirmation = false
+    @State private var showLeaveConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -22,7 +24,8 @@ struct ActivityTabView: View {
                     members: teamSession.isInRoom ? teamSession.members : [],
                     visibleMemberIDs: teamSession.visibleMemberIDs,
                     selfFallbackPoints: store.recentHistoryPoints,
-                    connectionTierRefreshTick: teamSession.connectionTierRefreshTick
+                    connectionTierRefreshTick: teamSession.connectionTierRefreshTick,
+                    memberMetricsRefreshTick: teamSession.memberMetricsRefreshTick
                 )
                 .ignoresSafeArea(edges: isMapFullscreen ? [.top, .bottom] : [])
                 .simultaneousGesture(
@@ -40,7 +43,9 @@ struct ActivityTabView: View {
                         Spacer()
 
                         VStack(spacing: 10) {
-                            metricsOverlay
+                            if !teamSession.isInRoom {
+                                metricsOverlay
+                            }
                             if teamSession.canControlActivitySession {
                                 sessionControlBar
                             }
@@ -68,11 +73,49 @@ struct ActivityTabView: View {
                             showFaceToFaceSheet = true
                         },
                         onLeaveTapped: {
-                            TeamRelayLogger.ui("点击「退出」room=\(teamSession.roomCode ?? "nil")")
-                            teamSession.leaveRoom()
+                            TeamRelayLogger.ui(
+                                "点击「\(teamSession.leaveButtonTitle)」room=\(teamSession.roomCode ?? "nil")"
+                            )
+                            showLeaveConfirmation = true
                         }
                     )
                 }
+            }
+            .confirmationDialog(
+                teamSession.leaveConfirmationTitle,
+                isPresented: $showLeaveConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button(teamSession.leaveButtonTitle, role: .destructive) {
+                    TeamRelayLogger.ui(
+                        "确认\(teamSession.leaveButtonTitle) room=\(teamSession.roomCode ?? "nil")"
+                    )
+                    Task {
+                        await teamSession.leaveRoom()
+                    }
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text(teamSession.leaveConfirmationMessage)
+            }
+            .alert("你自动成为房主", isPresented: $teamSession.showBecameHostAlert) {
+                Button("好的", role: .cancel) {
+                    teamSession.acknowledgeBecameHostAlert()
+                }
+            } message: {
+                Text("原房主已退出，你已接管队伍控制。")
+            }
+            .confirmationDialog(
+                "重置运动会话",
+                isPresented: $showResetConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("重置", role: .destructive) {
+                    resetTeamActivity()
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("将同步重置所有成员的速度、时长与行程数据。")
             }
             .sheet(isPresented: $showFaceToFaceSheet) {
                 FaceToFaceTeamSheet(
@@ -85,46 +128,83 @@ struct ActivityTabView: View {
                 #if DEBUG
                 applyDebugSimulatorSetupIfNeeded()
                 #endif
-                syncSelfLocation()
+                syncSelfSnapshot()
             }
             .onDisappear {
                 isMapFullscreen = false
             }
             .onChange(of: store.recentHistoryPoints) { _, _ in
-                syncSelfLocation()
+                syncSelfSnapshot()
             }
             .onChange(of: store.latitude) { _, _ in
-                syncSelfLocation()
+                syncSelfSnapshot()
             }
             .onChange(of: store.longitude) { _, _ in
-                syncSelfLocation()
+                syncSelfSnapshot()
             }
             .onChange(of: teamSession.isInRoom) { _, isInRoom in
                 TeamRelayLogger.ui("isInRoom 变更 -> \(isInRoom) room=\(teamSession.roomCode ?? "nil")")
                 if isInRoom {
-                    syncSelfLocation()
+                    syncSelfSnapshot()
                 }
             }
             .onChange(of: teamSession.selfLocationSyncNonce) { _, _ in
-                syncSelfLocation()
+                syncSelfSnapshot()
+            }
+            .onChange(of: teamSession.pendingSessionSyncAction) { _, action in
+                guard let action else { return }
+                applyRemoteSessionSync(action)
+                teamSession.acknowledgeSessionSync()
             }
             .onReceive(
                 Timer.publish(
-                    every: TeamRelayConfiguration.locationUpdateInterval,
+                    every: TeamRelayConfiguration.metricsUpdateInterval,
                     on: .main,
                     in: .common
                 ).autoconnect()
             ) { _ in
                 guard teamSession.isInRoom else { return }
-                syncSelfLocation()
+                syncSelfSnapshot()
             }
         }
     }
 
     // MARK: - Sync
 
-    private func syncSelfLocation() {
-        teamSession.ingestSelfLocation(from: store)
+    private func syncSelfSnapshot() {
+        teamSession.ingestSelfSnapshot(from: store)
+    }
+
+    private func applyRemoteSessionSync(_ action: TeamSessionSyncAction) {
+        switch action {
+        case .start:
+            store.startActivitySession()
+        case .pause:
+            store.pauseActivitySession()
+        case .reset:
+            store.resetActivitySession()
+        }
+    }
+
+    private func startTeamActivity() {
+        store.startActivitySession()
+        if teamSession.isInRoom, teamSession.isRoomCreator {
+            teamSession.broadcastSessionSync(.start, nickname: activityNickname)
+        }
+    }
+
+    private func pauseTeamActivity() {
+        store.pauseActivitySession()
+        if teamSession.isInRoom, teamSession.isRoomCreator {
+            teamSession.broadcastSessionSync(.pause, nickname: activityNickname)
+        }
+    }
+
+    private func resetTeamActivity() {
+        store.resetActivitySession()
+        if teamSession.isInRoom, teamSession.isRoomCreator {
+            teamSession.broadcastSessionSync(.reset, nickname: activityNickname)
+        }
     }
 
     private func ensureNickname() {
@@ -182,23 +262,25 @@ struct ActivityTabView: View {
     private var sessionControlBar: some View {
         HStack(spacing: 10) {
             sessionButton(
-                title: store.activitySessionPhase == .paused ? "继续" : "开始",
+                title: startButtonTitle,
                 systemImage: "play.fill",
                 isEnabled: store.activitySessionPhase != .running,
                 fill: AltitudeTheme.accent.opacity(0.92)
             ) {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                store.startActivitySession()
+                startTeamActivity()
             }
 
-            sessionButton(
-                title: "暂停",
-                systemImage: "pause.fill",
-                isEnabled: store.activitySessionPhase == .running,
-                fill: Color.orange.opacity(0.88)
-            ) {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                store.pauseActivitySession()
+            if showsPauseControl {
+                sessionButton(
+                    title: "暂停",
+                    systemImage: "pause.fill",
+                    isEnabled: store.activitySessionPhase == .running,
+                    fill: Color.orange.opacity(0.88)
+                ) {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    pauseTeamActivity()
+                }
             }
 
             sessionButton(
@@ -208,9 +290,24 @@ struct ActivityTabView: View {
                 fill: Color.white.opacity(0.14)
             ) {
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                store.resetActivitySession()
+                if teamSession.isInRoom, teamSession.isRoomCreator {
+                    showResetConfirmation = true
+                } else {
+                    resetTeamActivity()
+                }
             }
         }
+    }
+
+    private var showsPauseControl: Bool {
+        !teamSession.isInRoom || !teamSession.isRoomCreator
+    }
+
+    private var startButtonTitle: String {
+        if showsPauseControl, store.activitySessionPhase == .paused {
+            return "继续"
+        }
+        return "开始"
     }
 
     private var canResetActivitySession: Bool {

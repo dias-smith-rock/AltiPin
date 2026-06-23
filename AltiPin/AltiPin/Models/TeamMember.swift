@@ -17,6 +17,40 @@ struct TeamMember: Identifiable {
     var currentCoordinate: CLLocationCoordinate2D
     var elevation: Double
     var lastSeen: Date
+    var speedKmh: Double
+    var sessionDuration: TimeInterval
+    var distanceMeters: Double
+    var activityPhase: ActivitySessionPhase
+
+    init(
+        id: UUID,
+        clientId: String,
+        nickname: String,
+        color: Color,
+        isSelf: Bool,
+        recentPoints: [HistoryPoint],
+        currentCoordinate: CLLocationCoordinate2D,
+        elevation: Double,
+        lastSeen: Date,
+        speedKmh: Double = 0,
+        sessionDuration: TimeInterval = 0,
+        distanceMeters: Double = 0,
+        activityPhase: ActivitySessionPhase = .idle
+    ) {
+        self.id = id
+        self.clientId = clientId
+        self.nickname = nickname
+        self.color = color
+        self.isSelf = isSelf
+        self.recentPoints = recentPoints
+        self.currentCoordinate = currentCoordinate
+        self.elevation = elevation
+        self.lastSeen = lastSeen
+        self.speedKmh = speedKmh
+        self.sessionDuration = sessionDuration
+        self.distanceMeters = distanceMeters
+        self.activityPhase = activityPhase
+    }
 
     var initial: String {
         String(nickname.prefix(1))
@@ -39,6 +73,21 @@ struct TeamMember: Identifiable {
 
     func minutesSinceLastSeen(at now: Date = .now) -> Int {
         max(1, Int(now.timeIntervalSince(lastSeen) / 60))
+    }
+
+    var formattedDuration: String {
+        Self.formatDuration(sessionDuration)
+    }
+
+    static func formatDuration(_ duration: TimeInterval) -> String {
+        let totalSeconds = max(0, Int(duration.rounded()))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        if hours > 0 {
+            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        }
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 

@@ -14,6 +14,8 @@ final class SupabaseTeamRelay: TeamRelayClient {
     var onMemberUpdate: ((TeamBroadcastEnvelope) -> Void)?
     var onMemberJoined: ((TeamPresencePayload) -> Void)?
     var onMemberLeft: ((String) -> Void)?
+    var onSessionSync: ((TeamSessionSyncPayload) -> Void)?
+    var onHostTransfer: ((TeamHostTransferPayload) -> Void)?
     var onConnectionStateChange: ((TeamConnectionState) -> Void)?
 
     private var channel: RealtimeChannelV2?
@@ -23,6 +25,8 @@ final class SupabaseTeamRelay: TeamRelayClient {
     private var broadcastTask: Task<Void, Never>?
     private var presenceTask: Task<Void, Never>?
     private var statusTask: Task<Void, Never>?
+    private var sessionSyncTask: Task<Void, Never>?
+    private var hostTransferTask: Task<Void, Never>?
     private var lastSentAt: Date?
     private var isSubscribed = false
     private var knownMemberClientIDs = Set<String>()
@@ -80,6 +84,8 @@ final class SupabaseTeamRelay: TeamRelayClient {
         let broadcastStream = channel.broadcastStream(event: TeamRelayEvents.broadcastUpdate)
         let presenceStream = channel.presenceChange()
         let statusStream = channel.statusChange
+        let sessionSyncStream = channel.broadcastStream(event: TeamRelayEvents.sessionSync)
+        let hostTransferStream = channel.broadcastStream(event: TeamRelayEvents.hostTransfer)
 
         broadcastTask = Task { [weak self] in
             TeamRelayLogger.relay("broadcast 监听任务启动 event=\(TeamRelayEvents.broadcastUpdate)")
@@ -108,6 +114,24 @@ final class SupabaseTeamRelay: TeamRelayClient {
                 self.handleStatusChange(status)
             }
             TeamRelayLogger.relay("status 监听任务结束")
+        }
+
+        sessionSyncTask = Task { [weak self] in
+            TeamRelayLogger.relay("sessionSync 监听任务启动 event=\(TeamRelayEvents.sessionSync)")
+            for await message in sessionSyncStream {
+                guard let self else { continue }
+                self.handleSessionSyncMessage(message)
+            }
+            TeamRelayLogger.relay("sessionSync 监听任务结束")
+        }
+
+        hostTransferTask = Task { [weak self] in
+            TeamRelayLogger.relay("hostTransfer 监听任务启动 event=\(TeamRelayEvents.hostTransfer)")
+            for await message in hostTransferStream {
+                guard let self else { continue }
+                self.handleHostTransferMessage(message)
+            }
+            TeamRelayLogger.relay("hostTransfer 监听任务结束")
         }
 
         TeamRelayLogger.relay("subscribeWithError() 开始 channel.status=\(channel.status)")
@@ -161,9 +185,13 @@ final class SupabaseTeamRelay: TeamRelayClient {
         broadcastTask?.cancel()
         presenceTask?.cancel()
         statusTask?.cancel()
+        sessionSyncTask?.cancel()
+        hostTransferTask?.cancel()
         broadcastTask = nil
         presenceTask = nil
         statusTask = nil
+        sessionSyncTask = nil
+        hostTransferTask = nil
 
         let activeChannel = channel
         channel = nil
@@ -198,6 +226,37 @@ final class SupabaseTeamRelay: TeamRelayClient {
         sendLocationUpdateNow(payload, channel: channel, nickname: nickname)
     }
 
+    func sendSessionSync(_ payload: TeamSessionSyncPayload) {
+        guard isSubscribed, let channel else { return }
+        Task {
+            do {
+                try await channel.broadcast(
+                    event: TeamRelayEvents.sessionSync,
+                    message: payload
+                )
+                TeamRelayLogger.session("sessionSync 发送成功 action=\(payload.action.rawValue)")
+            } catch {
+                TeamRelayLogger.relay("sessionSync 发送失败 error=\(error)")
+            }
+        }
+    }
+
+    func sendHostTransfer(_ payload: TeamHostTransferPayload) async {
+        guard isSubscribed, let channel else { return }
+        do {
+            try await channel.broadcast(
+                event: TeamRelayEvents.hostTransfer,
+                message: payload
+            )
+            TeamRelayLogger.session(
+                "hostTransfer 发送成功 newHost=\(payload.newHostNickname) " +
+                "clientId=\(payload.newHostClientId) announce=\(payload.announcePromotion)"
+            )
+        } catch {
+            TeamRelayLogger.relay("hostTransfer 发送失败 error=\(error)")
+        }
+    }
+
     private func sendLocationUpdateNow(
         _ payload: TeamLocationPayload,
         channel: RealtimeChannelV2,
@@ -205,12 +264,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
     ) {
         let now = Date()
         if let lastSentAt,
-           now.timeIntervalSince(lastSentAt) < TeamRelayConfiguration.locationUpdateInterval {
-            TeamRelayLogger.location(
-                "broadcast 节流跳过 interval=\(TeamRelayConfiguration.locationUpdateInterval)s",
-                throttleKey: "broadcast-throttle",
-                throttleSeconds: 10
-            )
+           now.timeIntervalSince(lastSentAt) < TeamRelayConfiguration.metricsUpdateInterval {
             return
         }
         lastSentAt = now
@@ -288,6 +342,35 @@ final class SupabaseTeamRelay: TeamRelayClient {
         }
     }
 
+    private func handleSessionSyncMessage(_ message: JSONObject) {
+        if let payload = try? message["payload"]?.decode(as: TeamSessionSyncPayload.self) {
+            TeamRelayLogger.session("收到 sessionSync action=\(payload.action.rawValue) from=\(payload.nickname)")
+            onSessionSync?(payload)
+            return
+        }
+        if let payload = try? message.decode(as: TeamSessionSyncPayload.self) {
+            onSessionSync?(payload)
+        } else {
+            TeamRelayLogger.relay("无法解析 sessionSync 消息")
+        }
+    }
+
+    private func handleHostTransferMessage(_ message: JSONObject) {
+        if let payload = try? message["payload"]?.decode(as: TeamHostTransferPayload.self) {
+            TeamRelayLogger.session(
+                "收到 hostTransfer newHost=\(payload.newHostNickname) " +
+                "clientId=\(payload.newHostClientId) announce=\(payload.announcePromotion)"
+            )
+            onHostTransfer?(payload)
+            return
+        }
+        if let payload = try? message.decode(as: TeamHostTransferPayload.self) {
+            onHostTransfer?(payload)
+        } else {
+            TeamRelayLogger.relay("无法解析 hostTransfer 消息")
+        }
+    }
+
     private func handlePresenceChange(_ action: any PresenceAction) {
         let rawJoinCount = action.joins.count
         let rawLeaveCount = action.leaves.count
@@ -360,9 +443,13 @@ final class SupabaseTeamRelay: TeamRelayClient {
         broadcastTask?.cancel()
         presenceTask?.cancel()
         statusTask?.cancel()
+        sessionSyncTask?.cancel()
+        hostTransferTask?.cancel()
         broadcastTask = nil
         presenceTask = nil
         statusTask = nil
+        sessionSyncTask = nil
+        hostTransferTask = nil
 
         await channel?.untrack()
         await channel?.unsubscribe()

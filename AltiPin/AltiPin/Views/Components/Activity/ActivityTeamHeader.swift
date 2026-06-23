@@ -26,7 +26,7 @@ struct ActivityTeamHeader: ToolbarContent {
             }
 
             ToolbarItem(placement: .topBarTrailing) {
-                Button("退出", action: onLeaveTapped)
+                Button(teamSession.leaveButtonTitle, action: onLeaveTapped)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.red.opacity(0.9))
             }

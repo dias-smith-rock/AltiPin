@@ -13,6 +13,8 @@ final class MockTeamRelay: TeamRelayClient {
     var onMemberUpdate: ((TeamBroadcastEnvelope) -> Void)?
     var onMemberJoined: ((TeamPresencePayload) -> Void)?
     var onMemberLeft: ((String) -> Void)?
+    var onSessionSync: ((TeamSessionSyncPayload) -> Void)?
+    var onHostTransfer: ((TeamHostTransferPayload) -> Void)?
     var onConnectionStateChange: ((TeamConnectionState) -> Void)?
 
     private var roomCode: String?
@@ -49,6 +51,14 @@ final class MockTeamRelay: TeamRelayClient {
 
     func sendLocationUpdate(_ payload: TeamLocationPayload) {
         // Mock relay accepts self updates silently.
+    }
+
+    func sendSessionSync(_ payload: TeamSessionSyncPayload) {
+        onSessionSync?(payload)
+    }
+
+    func sendHostTransfer(_ payload: TeamHostTransferPayload) async {
+        onHostTransfer?(payload)
     }
 
     private func seedMockMembers(roomCode: String, excluding selfNickname: String) {
@@ -91,7 +101,11 @@ final class MockTeamRelay: TeamRelayClient {
                                 lon: last.longitude,
                                 lat: last.latitude,
                                 ele: last.elevation,
-                                timestamp: last.timestamp.timeIntervalSince1970
+                                timestamp: last.timestamp.timeIntervalSince1970,
+                                speedKmh: 4.2,
+                                sessionDuration: 120,
+                                distanceMeters: 350,
+                                activityPhase: ActivitySessionPhase.running.rawValue
                             )
                         )
                     )
@@ -153,7 +167,11 @@ final class MockTeamRelay: TeamRelayClient {
                         lon: member.longitude,
                         lat: member.latitude,
                         ele: member.elevation,
-                        timestamp: point.timestamp.timeIntervalSince1970
+                        timestamp: point.timestamp.timeIntervalSince1970,
+                        speedKmh: 5.5,
+                        sessionDuration: 180,
+                        distanceMeters: 420,
+                        activityPhase: ActivitySessionPhase.running.rawValue
                     )
                 )
             )

@@ -12,6 +12,7 @@ struct GroupTrackMapView: View {
     let visibleMemberIDs: Set<UUID>
     let selfFallbackPoints: [HistoryPoint]
     let connectionTierRefreshTick: Int
+    let memberMetricsRefreshTick: Int
 
     @State private var cameraPosition: MapCameraPosition = .automatic
 
@@ -38,11 +39,12 @@ struct GroupTrackMapView: View {
         .onChange(of: membersSignature) { _, _ in updateCamera() }
         .onChange(of: visibleMemberIDs) { _, _ in updateCamera() }
         .onChange(of: connectionTierRefreshTick) { _, _ in }
+        .onChange(of: memberMetricsRefreshTick) { _, _ in }
     }
 
     private var membersSignature: String {
         members.map {
-            "\($0.id.uuidString):\($0.currentCoordinate.latitude):\($0.currentCoordinate.longitude):\($0.recentPoints.count)"
+            "\($0.id.uuidString):\($0.currentCoordinate.latitude):\($0.currentCoordinate.longitude):\($0.recentPoints.count):\($0.sessionDuration)"
         }
         .joined(separator: "|")
     }
@@ -98,8 +100,8 @@ struct GroupTrackMapView: View {
                         }
                     }
 
-                    Annotation(member.nickname, coordinate: member.currentCoordinate, anchor: .center) {
-                        memberMarker(member)
+                    Annotation(member.nickname, coordinate: member.currentCoordinate, anchor: .top) {
+                        memberMarkerStack(member)
                     }
                 }
             }
@@ -109,7 +111,15 @@ struct GroupTrackMapView: View {
     }
 
     @ViewBuilder
-    private func memberMarker(_ member: TeamMember) -> some View {
+    private func memberMarkerStack(_ member: TeamMember) -> some View {
+        VStack(spacing: 4) {
+            memberAvatar(member)
+            memberMetricsBadge(member)
+        }
+    }
+
+    @ViewBuilder
+    private func memberAvatar(_ member: TeamMember) -> some View {
         let tier = member.connectionTier()
 
         ZStack {
@@ -128,6 +138,27 @@ struct GroupTrackMapView: View {
         }
         .opacity(markerOpacity(for: tier))
         .grayscale(tier == .disconnected ? 1 : 0)
+    }
+
+    private func memberMetricsBadge(_ member: TeamMember) -> some View {
+        VStack(spacing: 2) {
+            Text(String(format: "%.1f km/h", member.speedKmh))
+            Text(member.formattedDuration)
+            Text(String(format: "%.1f km", member.distanceMeters / 1000))
+        }
+        .font(.system(size: 9, weight: .semibold, design: .rounded))
+        .monospacedDigit()
+        .foregroundStyle(.white)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(Color.black.opacity(0.78))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(member.color.opacity(0.65), lineWidth: 1)
+        )
     }
 
     private func markerOpacity(for tier: TeamConnectionTier) -> Double {
@@ -189,7 +220,8 @@ struct GroupTrackMapView: View {
             members: [],
             visibleMemberIDs: [],
             selfFallbackPoints: HistoryPoint.mockPoints,
-            connectionTierRefreshTick: 0
+            connectionTierRefreshTick: 0,
+            memberMetricsRefreshTick: 0
         )
     }
 }
