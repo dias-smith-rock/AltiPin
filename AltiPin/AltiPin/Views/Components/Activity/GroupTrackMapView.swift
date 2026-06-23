@@ -11,6 +11,7 @@ struct GroupTrackMapView: View {
     let members: [TeamMember]
     let visibleMemberIDs: Set<UUID>
     let selfFallbackPoints: [HistoryPoint]
+    let connectionTierRefreshTick: Int
 
     @State private var cameraPosition: MapCameraPosition = .automatic
 
@@ -34,7 +35,16 @@ struct GroupTrackMapView: View {
         .background(Color.black)
         .onAppear { updateCamera() }
         .onChange(of: members.map(\.id)) { _, _ in updateCamera() }
+        .onChange(of: membersSignature) { _, _ in updateCamera() }
         .onChange(of: visibleMemberIDs) { _, _ in updateCamera() }
+        .onChange(of: connectionTierRefreshTick) { _, _ in }
+    }
+
+    private var membersSignature: String {
+        members.map {
+            "\($0.id.uuidString):\($0.currentCoordinate.latitude):\($0.currentCoordinate.longitude):\($0.recentPoints.count)"
+        }
+        .joined(separator: "|")
     }
 
     // MARK: - Solo Fallback
@@ -73,22 +83,24 @@ struct GroupTrackMapView: View {
     private var teamMapView: some View {
         Map(position: $cameraPosition) {
             ForEach(visibleMembers) { member in
-                if member.recentPoints.count >= 2 {
-                    MapPolyline(coordinates: member.recentPoints.map(\.coordinate))
-                        .stroke(member.color, lineWidth: member.isSelf ? 5 : 3.5)
-                }
-
-                if let start = member.recentPoints.first {
-                    Annotation("\(member.nickname) 起点", coordinate: start.coordinate, anchor: .center) {
-                        Image(systemName: "play.circle.fill")
-                            .font(.caption)
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, member.color.opacity(0.9))
+                if member.hasValidCoordinate {
+                    if member.recentPoints.count >= 2 {
+                        MapPolyline(coordinates: member.recentPoints.map(\.coordinate))
+                            .stroke(member.color, lineWidth: member.isSelf ? 5 : 3.5)
                     }
-                }
 
-                Annotation(member.nickname, coordinate: member.currentCoordinate, anchor: .center) {
-                    memberMarker(member)
+                    if let start = member.recentPoints.first, member.recentPoints.count >= 2 {
+                        Annotation("\(member.nickname) 起点", coordinate: start.coordinate, anchor: .center) {
+                            Image(systemName: "play.circle.fill")
+                                .font(.caption)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, member.color.opacity(0.9))
+                        }
+                    }
+
+                    Annotation(member.nickname, coordinate: member.currentCoordinate, anchor: .center) {
+                        memberMarker(member)
+                    }
                 }
             }
         }
@@ -133,8 +145,9 @@ struct GroupTrackMapView: View {
         if members.isEmpty {
             coordinates = displayPoints.map(\.coordinate)
         } else {
-            coordinates = visibleMembers.flatMap { member in
-                member.recentPoints.map(\.coordinate) + [member.currentCoordinate]
+            coordinates = visibleMembers.flatMap { member -> [CLLocationCoordinate2D] in
+                guard member.hasValidCoordinate else { return [] }
+                return member.recentPoints.map(\.coordinate) + [member.currentCoordinate]
             }
         }
         guard !coordinates.isEmpty else { return }
@@ -175,7 +188,8 @@ struct GroupTrackMapView: View {
         GroupTrackMapView(
             members: [],
             visibleMemberIDs: [],
-            selfFallbackPoints: HistoryPoint.mockPoints
+            selfFallbackPoints: HistoryPoint.mockPoints,
+            connectionTierRefreshTick: 0
         )
     }
 }

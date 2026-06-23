@@ -8,8 +8,10 @@ import Foundation
 
 @MainActor
 final class MockTeamRelay: TeamRelayClient {
-    var onMemberUpdate: ((String, TeamLocationPayload) -> Void)?
-    var onMemberJoined: ((String) -> Void)?
+    var localClientId: String? { "mock-self-client" }
+
+    var onMemberUpdate: ((TeamBroadcastEnvelope) -> Void)?
+    var onMemberJoined: ((TeamPresencePayload) -> Void)?
     var onMemberLeft: ((String) -> Void)?
     var onConnectionStateChange: ((TeamConnectionState) -> Void)?
 
@@ -19,6 +21,7 @@ final class MockTeamRelay: TeamRelayClient {
     private var mockMembers: [MockMemberState] = []
 
     private struct MockMemberState {
+        let clientId: String
         let nickname: String
         var latitude: Double
         var longitude: Double
@@ -64,6 +67,7 @@ final class MockTeamRelay: TeamRelayClient {
             )
             let last = points.last
             return MockMemberState(
+                clientId: "mock-client-\(index)",
                 nickname: name,
                 latitude: last?.latitude ?? baseLatitude + offset,
                 longitude: last?.longitude ?? baseLongitude + offset,
@@ -75,15 +79,20 @@ final class MockTeamRelay: TeamRelayClient {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in
             guard let self else { return }
             for member in self.mockMembers.prefix(2) {
-                self.onMemberJoined?(member.nickname)
+                self.onMemberJoined?(
+                    TeamPresencePayload(nickname: member.nickname, clientId: member.clientId)
+                )
                 if let last = member.recentPoints.last {
                     self.onMemberUpdate?(
-                        member.nickname,
-                        TeamLocationPayload(
-                            lon: last.longitude,
-                            lat: last.latitude,
-                            ele: last.elevation,
-                            timestamp: last.timestamp.timeIntervalSince1970
+                        TeamBroadcastEnvelope(
+                            nickname: member.nickname,
+                            clientId: member.clientId,
+                            data: TeamLocationPayload(
+                                lon: last.longitude,
+                                lat: last.latitude,
+                                ele: last.elevation,
+                                timestamp: last.timestamp.timeIntervalSince1970
+                            )
                         )
                     )
                 }
@@ -93,7 +102,9 @@ final class MockTeamRelay: TeamRelayClient {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
             guard let self else { return }
             for member in self.mockMembers.dropFirst(2) {
-                self.onMemberJoined?(member.nickname)
+                self.onMemberJoined?(
+                    TeamPresencePayload(nickname: member.nickname, clientId: member.clientId)
+                )
             }
         }
 
@@ -133,13 +144,17 @@ final class MockTeamRelay: TeamRelayClient {
                 )
             }
 
+            let member = mockMembers[index]
             onMemberUpdate?(
-                mockMembers[index].nickname,
-                TeamLocationPayload(
-                    lon: mockMembers[index].longitude,
-                    lat: mockMembers[index].latitude,
-                    ele: mockMembers[index].elevation,
-                    timestamp: point.timestamp.timeIntervalSince1970
+                TeamBroadcastEnvelope(
+                    nickname: member.nickname,
+                    clientId: member.clientId,
+                    data: TeamLocationPayload(
+                        lon: member.longitude,
+                        lat: member.latitude,
+                        ele: member.elevation,
+                        timestamp: point.timestamp.timeIntervalSince1970
+                    )
                 )
             )
         }

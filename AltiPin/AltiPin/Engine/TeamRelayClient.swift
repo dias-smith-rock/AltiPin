@@ -28,6 +28,7 @@ struct TeamPresencePayload: Codable, Equatable {
 
 struct TeamBroadcastEnvelope: Codable, Equatable {
     let nickname: String
+    let clientId: String?
     let data: TeamLocationPayload
 }
 
@@ -75,8 +76,9 @@ enum TeamRelayEvents {
 @MainActor
 protocol TeamRelayClient: AnyObject {
     var lastError: String? { get }
-    var onMemberUpdate: ((String, TeamLocationPayload) -> Void)? { get set }
-    var onMemberJoined: ((String) -> Void)? { get set }
+    var localClientId: String? { get }
+    var onMemberUpdate: ((TeamBroadcastEnvelope) -> Void)? { get set }
+    var onMemberJoined: ((TeamPresencePayload) -> Void)? { get set }
     var onMemberLeft: ((String) -> Void)? { get set }
     var onConnectionStateChange: ((TeamConnectionState) -> Void)? { get set }
 
@@ -87,6 +89,7 @@ protocol TeamRelayClient: AnyObject {
 
 extension TeamRelayClient {
     var lastError: String? { nil }
+    var localClientId: String? { nil }
 
     var onConnectionStateChange: ((TeamConnectionState) -> Void)? {
         get { nil }

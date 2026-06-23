@@ -20,7 +20,8 @@ struct ActivityTabView: View {
                 GroupTrackMapView(
                     members: teamSession.isInRoom ? teamSession.members : [],
                     visibleMemberIDs: teamSession.visibleMemberIDs,
-                    selfFallbackPoints: store.recentHistoryPoints
+                    selfFallbackPoints: store.recentHistoryPoints,
+                    connectionTierRefreshTick: teamSession.connectionTierRefreshTick
                 )
                 .ignoresSafeArea(edges: isMapFullscreen ? [.top, .bottom] : [])
                 .simultaneousGesture(
@@ -59,8 +60,14 @@ struct ActivityTabView: View {
                 if !isMapFullscreen {
                     ActivityTeamHeader(
                         teamSession: teamSession,
-                        onFaceToFaceTapped: { showFaceToFaceSheet = true },
-                        onLeaveTapped: { teamSession.leaveRoom() }
+                        onFaceToFaceTapped: {
+                            TeamRelayLogger.ui("点击「面对面组队」")
+                            showFaceToFaceSheet = true
+                        },
+                        onLeaveTapped: {
+                            TeamRelayLogger.ui("点击「退出」room=\(teamSession.roomCode ?? "nil")")
+                            teamSession.leaveRoom()
+                        }
                     )
                 }
             }
@@ -90,9 +97,13 @@ struct ActivityTabView: View {
                 syncSelfLocation()
             }
             .onChange(of: teamSession.isInRoom) { _, isInRoom in
+                TeamRelayLogger.ui("isInRoom 变更 -> \(isInRoom) room=\(teamSession.roomCode ?? "nil")")
                 if isInRoom {
                     syncSelfLocation()
                 }
+            }
+            .onChange(of: teamSession.selfLocationSyncNonce) { _, _ in
+                syncSelfLocation()
             }
         }
     }

@@ -7,11 +7,49 @@ import Foundation
 
 enum TeamRelayLogger {
     private static let prefix = "[TeamRelay]"
+    private static var throttledLogTimes: [String: Date] = [:]
 
     static func log(_ message: String, file: String = #fileID, line: Int = #line) {
         #if DEBUG
         print("\(prefix) \(message) (\(file):\(line))")
         #endif
+    }
+
+    static func session(_ message: String, file: String = #fileID, line: Int = #line) {
+        log("[Session] \(message)", file: file, line: line)
+    }
+
+    static func presence(_ message: String, file: String = #fileID, line: Int = #line) {
+        log("[Presence] \(message)", file: file, line: line)
+    }
+
+    static func location(
+        _ message: String,
+        throttleKey: String? = nil,
+        throttleSeconds: TimeInterval = 5,
+        file: String = #fileID,
+        line: Int = #line
+    ) {
+        if let throttleKey,
+           shouldThrottle(key: throttleKey, interval: throttleSeconds) {
+            return
+        }
+        log("[Location] \(message)", file: file, line: line)
+    }
+
+    static func ui(_ message: String, file: String = #fileID, line: Int = #line) {
+        log("[UI] \(message)", file: file, line: line)
+    }
+
+    static func relay(_ message: String, file: String = #fileID, line: Int = #line) {
+        log("[Relay] \(message)", file: file, line: line)
+    }
+
+    static func formatCoordinate(lat: Double, lon: Double, ele: Double? = nil) -> String {
+        if let ele {
+            return String(format: "lat=%.5f lon=%.5f ele=%.1fm", lat, lon, ele)
+        }
+        return String(format: "lat=%.5f lon=%.5f", lat, lon)
     }
 
     static func logConfigDiagnostics() {
@@ -25,16 +63,25 @@ enum TeamRelayLogger {
         let jwtRef = rawKey.flatMap { jwtProjectRef($0) } ?? "unknown"
         let configured = TeamRelayConfiguration.isSupabaseConfigured
 
-        log("─── Supabase 配置诊断 ───")
-        log("isSupabaseConfigured=\(configured)")
-        log("SUPABASE_PROJECT_REF(raw)=\(rawRef ?? "nil"), parsed=\(projectRef)")
-        log("SUPABASE_URL(parsed)=\(parsedURL), host=\(parsedHost)")
-        log("SUPABASE_ANON_KEY=\(keyPrefix), jwt.ref=\(jwtRef)")
+        relay("─── Supabase 配置诊断 ───")
+        relay("isSupabaseConfigured=\(configured)")
+        relay("SUPABASE_PROJECT_REF(raw)=\(rawRef ?? "nil"), parsed=\(projectRef)")
+        relay("SUPABASE_URL(parsed)=\(parsedURL), host=\(parsedHost)")
+        relay("SUPABASE_ANON_KEY=\(keyPrefix), jwt.ref=\(jwtRef)")
         if projectRef != "nil", jwtRef != "unknown", projectRef != jwtRef {
-            log("⚠️ PROJECT_REF 与 JWT ref 不一致：ref=\(projectRef), jwt.ref=\(jwtRef)")
+            relay("⚠️ PROJECT_REF 与 JWT ref 不一致：ref=\(projectRef), jwt.ref=\(jwtRef)")
         }
-        log("────────────────────────")
+        relay("────────────────────────")
         #endif
+    }
+
+    private static func shouldThrottle(key: String, interval: TimeInterval) -> Bool {
+        let now = Date()
+        if let last = throttledLogTimes[key], now.timeIntervalSince(last) < interval {
+            return true
+        }
+        throttledLogTimes[key] = now
+        return false
     }
 
     private static func configSourceValue(for key: String) -> String? {

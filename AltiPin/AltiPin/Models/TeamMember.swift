@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TeamMember: Identifiable {
     let id: UUID
+    var clientId: String
     var nickname: String
     var color: Color
     var isSelf: Bool
@@ -19,6 +20,10 @@ struct TeamMember: Identifiable {
 
     var initial: String {
         String(nickname.prefix(1))
+    }
+
+    var hasValidCoordinate: Bool {
+        abs(currentCoordinate.latitude) > 0.000_001 || abs(currentCoordinate.longitude) > 0.000_001
     }
 
     func connectionTier(at now: Date = .now) -> TeamConnectionTier {

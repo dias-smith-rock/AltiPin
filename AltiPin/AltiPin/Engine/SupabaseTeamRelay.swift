@@ -9,9 +9,10 @@ import Supabase
 @MainActor
 final class SupabaseTeamRelay: TeamRelayClient {
     private(set) var lastError: String?
+    var localClientId: String? { clientId?.uuidString }
 
-    var onMemberUpdate: ((String, TeamLocationPayload) -> Void)?
-    var onMemberJoined: ((String) -> Void)?
+    var onMemberUpdate: ((TeamBroadcastEnvelope) -> Void)?
+    var onMemberJoined: ((TeamPresencePayload) -> Void)?
     var onMemberLeft: ((String) -> Void)?
     var onConnectionStateChange: ((TeamConnectionState) -> Void)?
 
@@ -28,18 +29,18 @@ final class SupabaseTeamRelay: TeamRelayClient {
 
     func connect(roomCode: String, nickname: String) async {
         lastError = nil
-        TeamRelayLogger.log("connect 开始 room=\(roomCode) nickname=\(nickname)")
+        TeamRelayLogger.relay("connect 开始 room=\(roomCode) nickname=\(nickname)")
 
         guard TeamRelayConfiguration.isSupabaseConfigured else {
             lastError = "Supabase 未配置。请在 AltiPin.xcconfig 填写 SUPABASE_PROJECT_REF 与 anon key，并确认 Supabase-Info.plist 已合并进 Info.plist。"
-            TeamRelayLogger.log("失败：Supabase 未正确配置")
+            TeamRelayLogger.relay("失败：Supabase 未正确配置")
             onConnectionStateChange?(.disconnected)
             return
         }
 
         guard let client = SupabaseClientProvider.shared else {
             lastError = "无法初始化 Supabase 客户端，请检查 URL 与 anon key 是否来自同一项目。"
-            TeamRelayLogger.log("失败：SupabaseClient 为 nil")
+            TeamRelayLogger.relay("失败：SupabaseClient 为 nil")
             onConnectionStateChange?(.disconnected)
             return
         }
@@ -53,15 +54,15 @@ final class SupabaseTeamRelay: TeamRelayClient {
 
         let topic = TeamRelayConfiguration.channelTopic(roomID: roomCode)
         let presenceKey = clientId!.uuidString
-        TeamRelayLogger.log("topic=\(topic) clientId=\(presenceKey) isPrivate=false")
+        TeamRelayLogger.relay("topic=\(topic) clientId=\(presenceKey) isPrivate=false")
 
-        TeamRelayLogger.log("realtimeV2.connect() 前 status=\(client.realtimeV2.status)")
+        TeamRelayLogger.relay("realtimeV2.connect() 前 status=\(client.realtimeV2.status)")
         await client.realtimeV2.connect()
-        TeamRelayLogger.log("realtimeV2.connect() 后 status=\(client.realtimeV2.status)")
+        TeamRelayLogger.relay("realtimeV2.connect() 后 status=\(client.realtimeV2.status)")
 
         guard client.realtimeV2.status == .connected else {
             lastError = "Realtime WebSocket 连接失败，请检查网络与 Supabase 项目状态。"
-            TeamRelayLogger.log("失败：WebSocket 未 connected，status=\(client.realtimeV2.status)")
+            TeamRelayLogger.relay("失败：WebSocket 未 connected，status=\(client.realtimeV2.status)")
             onConnectionStateChange?(.disconnected)
             return
         }
@@ -72,47 +73,47 @@ final class SupabaseTeamRelay: TeamRelayClient {
             config.broadcast.receiveOwnBroadcasts = false
         }
         self.channel = channel
-        TeamRelayLogger.log("channel 已创建，开始注册 broadcast/presence/status 监听")
+        TeamRelayLogger.relay("channel 已创建，开始注册 broadcast/presence/status 监听")
 
         broadcastTask = Task { [weak self] in
-            TeamRelayLogger.log("broadcast 监听任务启动 event=\(TeamRelayEvents.broadcastUpdate)")
+            TeamRelayLogger.relay("broadcast 监听任务启动 event=\(TeamRelayEvents.broadcastUpdate)")
             for await message in channel.broadcastStream(event: TeamRelayEvents.broadcastUpdate) {
                 guard let self else { continue }
-                TeamRelayLogger.log("收到 broadcast 消息 keys=\(message.keys.sorted())")
+                TeamRelayLogger.relay("收到 broadcast 消息 keys=\(message.keys.sorted())")
                 self.handleBroadcastMessage(message)
             }
-            TeamRelayLogger.log("broadcast 监听任务结束")
+            TeamRelayLogger.relay("broadcast 监听任务结束")
         }
 
         presenceTask = Task { [weak self] in
-            TeamRelayLogger.log("presence 监听任务启动")
+            TeamRelayLogger.relay("presence 监听任务启动")
             for await action in channel.presenceChange() {
                 guard let self else { continue }
                 let joinCount = (try? action.decodeJoins(as: TeamPresencePayload.self))?.count ?? 0
                 let leaveCount = (try? action.decodeLeaves(as: TeamPresencePayload.self))?.count ?? 0
-                TeamRelayLogger.log("presenceChange joins=\(joinCount) leaves=\(leaveCount)")
+                TeamRelayLogger.relay("presenceChange joins=\(joinCount) leaves=\(leaveCount)")
                 self.handlePresenceChange(action)
             }
-            TeamRelayLogger.log("presence 监听任务结束")
+            TeamRelayLogger.relay("presence 监听任务结束")
         }
 
         statusTask = Task { [weak self] in
-            TeamRelayLogger.log("status 监听任务启动")
+            TeamRelayLogger.relay("status 监听任务启动")
             for await status in channel.statusChange {
                 guard let self else { continue }
-                TeamRelayLogger.log("channel.statusChange -> \(status)")
+                TeamRelayLogger.relay("channel.statusChange -> \(status)")
                 self.handleStatusChange(status)
             }
-            TeamRelayLogger.log("status 监听任务结束")
+            TeamRelayLogger.relay("status 监听任务结束")
         }
 
-        TeamRelayLogger.log("subscribeWithError() 开始 channel.status=\(channel.status)")
+        TeamRelayLogger.relay("subscribeWithError() 开始 channel.status=\(channel.status)")
         do {
             try await channel.subscribeWithError()
-            TeamRelayLogger.log("subscribeWithError() 成功 channel.status=\(channel.status)")
+            TeamRelayLogger.relay("subscribeWithError() 成功 channel.status=\(channel.status)")
         } catch {
             lastError = "频道订阅失败：\(error.localizedDescription)。请在 Supabase SQL Editor 执行 supabase_realtime_policies.sql。"
-            TeamRelayLogger.log("失败：subscribeWithError error=\(error)")
+            TeamRelayLogger.relay("失败：subscribeWithError error=\(error)")
             isSubscribed = false
             onConnectionStateChange?(.disconnected)
             await teardownChannel()
@@ -120,10 +121,10 @@ final class SupabaseTeamRelay: TeamRelayClient {
         }
 
         let subscribed = await waitUntilSubscribed(channel: channel, timeoutSeconds: 15)
-        TeamRelayLogger.log("waitUntilSubscribed 结果=\(subscribed) 最终 channel.status=\(channel.status)")
+        TeamRelayLogger.relay("waitUntilSubscribed 结果=\(subscribed) 最终 channel.status=\(channel.status)")
         guard subscribed else {
             lastError = "Realtime 频道订阅超时。请确认已执行 supabase_realtime_policies.sql 或开启 Realtime 公共访问。"
-            TeamRelayLogger.log("失败：订阅超时")
+            TeamRelayLogger.relay("失败：订阅超时")
             isSubscribed = false
             onConnectionStateChange?(.disconnected)
             await teardownChannel()
@@ -135,14 +136,14 @@ final class SupabaseTeamRelay: TeamRelayClient {
                 nickname: nickname,
                 clientId: presenceKey
             )
-            TeamRelayLogger.log("track(presence) 开始 nickname=\(nickname)")
+            TeamRelayLogger.relay("track(presence) 开始 nickname=\(nickname)")
             try await channel.track(presence)
             isSubscribed = true
-            TeamRelayLogger.log("connect 完成 ✅ isSubscribed=true")
+            TeamRelayLogger.relay("connect 完成 ✅ isSubscribed=true")
             onConnectionStateChange?(.connected)
         } catch {
             lastError = "Presence 上线失败：\(error.localizedDescription)"
-            TeamRelayLogger.log("失败：track(presence) error=\(error)")
+            TeamRelayLogger.relay("失败：track(presence) error=\(error)")
             isSubscribed = false
             onConnectionStateChange?(.disconnected)
             await teardownChannel()
@@ -150,7 +151,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
     }
 
     func disconnect() {
-        TeamRelayLogger.log("disconnect room=\(roomCode ?? "nil")")
+        TeamRelayLogger.relay("disconnect room=\(roomCode ?? "nil")")
         isSubscribed = false
         broadcastTask?.cancel()
         presenceTask?.cancel()
@@ -171,7 +172,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
             await activeChannel?.untrack()
             await activeChannel?.unsubscribe()
             await SupabaseClientProvider.shared?.realtimeV2.disconnect()
-            TeamRelayLogger.log("disconnect 完成")
+            TeamRelayLogger.relay("disconnect 完成")
         }
     }
 
@@ -179,12 +180,22 @@ final class SupabaseTeamRelay: TeamRelayClient {
         guard isSubscribed,
               let channel,
               let nickname else {
+            TeamRelayLogger.location(
+                "broadcast 跳过：未订阅 room=\(roomCode ?? "nil")",
+                throttleKey: "broadcast-skip-not-subscribed",
+                throttleSeconds: 10
+            )
             return
         }
 
         let now = Date()
         if let lastSentAt,
            now.timeIntervalSince(lastSentAt) < TeamRelayConfiguration.locationUpdateInterval {
+            TeamRelayLogger.location(
+                "broadcast 节流跳过 interval=\(TeamRelayConfiguration.locationUpdateInterval)s",
+                throttleKey: "broadcast-throttle",
+                throttleSeconds: 10
+            )
             return
         }
         lastSentAt = now
@@ -194,7 +205,11 @@ final class SupabaseTeamRelay: TeamRelayClient {
             outbound.timestamp = now.timeIntervalSince1970
         }
 
-        let envelope = TeamBroadcastEnvelope(nickname: nickname, data: outbound)
+        let envelope = TeamBroadcastEnvelope(
+            nickname: nickname,
+            clientId: clientId?.uuidString,
+            data: outbound
+        )
 
         Task {
             do {
@@ -202,9 +217,13 @@ final class SupabaseTeamRelay: TeamRelayClient {
                     event: TeamRelayEvents.broadcastUpdate,
                     message: envelope
                 )
-                TeamRelayLogger.log("broadcast 发送成功 lat=\(payload.lat) lon=\(payload.lon)")
+                TeamRelayLogger.location(
+                    "broadcast 发送成功 from=\(nickname) \(TeamRelayLogger.formatCoordinate(lat: payload.lat, lon: payload.lon, ele: payload.ele))",
+                    throttleKey: "broadcast-sent-\(roomCode ?? "")",
+                    throttleSeconds: 5
+                )
             } catch {
-                TeamRelayLogger.log("broadcast 发送失败 error=\(error)")
+                TeamRelayLogger.relay("broadcast 发送失败 error=\(error)")
             }
         }
     }
@@ -221,15 +240,15 @@ final class SupabaseTeamRelay: TeamRelayClient {
         while Date() < deadline {
             pollCount += 1
             if channel.status == .subscribed {
-                TeamRelayLogger.log("waitUntilSubscribed 在第 \(pollCount) 次轮询时 subscribed")
+                TeamRelayLogger.relay("waitUntilSubscribed 在第 \(pollCount) 次轮询时 subscribed")
                 return true
             }
             if channel.status == .unsubscribed {
-                TeamRelayLogger.log("waitUntilSubscribed 在第 \(pollCount) 次轮询时 unsubscribed，提前退出")
+                TeamRelayLogger.relay("waitUntilSubscribed 在第 \(pollCount) 次轮询时 unsubscribed，提前退出")
                 return false
             }
             if pollCount % 10 == 0 {
-                TeamRelayLogger.log("waitUntilSubscribed 轮询 #\(pollCount) status=\(channel.status)")
+                TeamRelayLogger.relay("waitUntilSubscribed 轮询 #\(pollCount) status=\(channel.status)")
             }
             try? await Task.sleep(for: .milliseconds(100))
         }
@@ -238,17 +257,19 @@ final class SupabaseTeamRelay: TeamRelayClient {
 
     private func handleBroadcastMessage(_ message: JSONObject) {
         if let envelope = try? message["payload"]?.decode(as: TeamBroadcastEnvelope.self) {
-            TeamRelayLogger.log("解析 broadcast envelope from=\(envelope.nickname)")
-            onMemberUpdate?(envelope.nickname, envelope.data)
+            TeamRelayLogger.relay("解析 broadcast envelope from=\(envelope.nickname) clientId=\(envelope.clientId ?? "nil")")
+            onMemberUpdate?(envelope)
             return
         }
 
         if let payload = try? message["payload"]?.decode(as: TeamLocationPayload.self),
            let sender = message["from"]?.stringValue ?? nickname {
-            TeamRelayLogger.log("解析 broadcast payload from=\(sender)")
-            onMemberUpdate?(sender, payload)
+            TeamRelayLogger.relay("解析 broadcast payload from=\(sender)")
+            onMemberUpdate?(
+                TeamBroadcastEnvelope(nickname: sender, clientId: nil, data: payload)
+            )
         } else {
-            TeamRelayLogger.log("无法解析 broadcast 消息")
+            TeamRelayLogger.relay("无法解析 broadcast 消息")
         }
     }
 
@@ -269,14 +290,14 @@ final class SupabaseTeamRelay: TeamRelayClient {
     private func registerMemberJoin(_ member: TeamPresencePayload) {
         guard member.clientId != clientId?.uuidString else { return }
         guard knownMemberClientIDs.insert(member.clientId).inserted else { return }
-        TeamRelayLogger.log("成员加入 nickname=\(member.nickname) clientId=\(member.clientId)")
-        onMemberJoined?(member.nickname)
+        TeamRelayLogger.presence("成员加入 nickname=\(member.nickname) clientId=\(member.clientId)")
+        onMemberJoined?(member)
     }
 
     private func registerMemberLeave(_ member: TeamPresencePayload) {
         guard knownMemberClientIDs.remove(member.clientId) != nil else { return }
-        TeamRelayLogger.log("成员离开 nickname=\(member.nickname)")
-        onMemberLeft?(member.nickname)
+        TeamRelayLogger.presence("成员离开 nickname=\(member.nickname) clientId=\(member.clientId)")
+        onMemberLeft?(member.clientId)
     }
 
     private func handleStatusChange(_ status: RealtimeChannelStatus) {
@@ -289,7 +310,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
             if lastError == nil {
                 lastError = "Realtime 连接已断开"
             }
-            TeamRelayLogger.log("channel 变为 unsubscribed lastError=\(lastError ?? "nil")")
+            TeamRelayLogger.relay("channel 变为 unsubscribed lastError=\(lastError ?? "nil")")
             onConnectionStateChange?(.disconnected)
         case .subscribing, .unsubscribing:
             onConnectionStateChange?(.connecting)
@@ -297,7 +318,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
     }
 
     private func teardownChannel() async {
-        TeamRelayLogger.log("teardownChannel 开始")
+        TeamRelayLogger.relay("teardownChannel 开始")
         broadcastTask?.cancel()
         presenceTask?.cancel()
         statusTask?.cancel()
@@ -308,6 +329,6 @@ final class SupabaseTeamRelay: TeamRelayClient {
         await channel?.untrack()
         await channel?.unsubscribe()
         channel = nil
-        TeamRelayLogger.log("teardownChannel 完成")
+        TeamRelayLogger.relay("teardownChannel 完成")
     }
 }

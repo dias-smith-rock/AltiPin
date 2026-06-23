@@ -50,6 +50,10 @@ struct FaceToFaceTeamSheet: View {
             }
         }
         .preferredColorScheme(.dark)
+        .onAppear {
+            TeamRelayLogger.ui("FaceToFaceTeamSheet 打开 mode=\(mode)")
+            TeamRelayLogger.logConfigDiagnostics()
+        }
     }
 
     // MARK: - Choose
@@ -213,10 +217,14 @@ struct FaceToFaceTeamSheet: View {
         let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         let name = trimmed.isEmpty ? defaultNickname() : trimmed
         nickname = name
+        TeamRelayLogger.ui("startCreate nickname=\(name)")
         await teamSession.createRoom(nickname: name)
         createdCode = teamSession.roomCode ?? ""
         if teamSession.roomCode == nil {
             errorMessage = teamSession.lastConnectionError ?? "创建队伍失败"
+            TeamRelayLogger.ui("startCreate 失败 error=\(errorMessage ?? "nil")")
+        } else {
+            TeamRelayLogger.ui("startCreate 成功 room=\(createdCode)")
         }
         isWorking = false
     }
@@ -224,6 +232,7 @@ struct FaceToFaceTeamSheet: View {
     private func startJoin() async {
         guard joinCode.count == 4 else {
             errorMessage = "请输入 4 位数字"
+            TeamRelayLogger.ui("startJoin 拒绝：房间码长度=\(joinCode.count)")
             return
         }
         isWorking = true
@@ -231,12 +240,15 @@ struct FaceToFaceTeamSheet: View {
         let trimmed = nickname.trimmingCharacters(in: .whitespacesAndNewlines)
         let name = trimmed.isEmpty ? defaultNickname() : trimmed
         nickname = name
+        TeamRelayLogger.ui("startJoin room=\(joinCode) nickname=\(name)")
         await teamSession.join(roomCode: joinCode, nickname: name)
         isWorking = false
         if teamSession.isInRoom {
+            TeamRelayLogger.ui("startJoin 成功 room=\(joinCode) 关闭 sheet")
             dismiss()
         } else {
             errorMessage = teamSession.lastConnectionError ?? "加入队伍失败"
+            TeamRelayLogger.ui("startJoin 失败 error=\(errorMessage ?? "nil")")
         }
     }
 
