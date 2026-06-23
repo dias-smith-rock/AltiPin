@@ -16,6 +16,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
     var onMemberLeft: ((String) -> Void)?
     var onSessionSync: ((TeamSessionSyncPayload) -> Void)?
     var onHostTransfer: ((TeamHostTransferPayload) -> Void)?
+    var onNicknameUpdate: ((TeamNicknameUpdatePayload) -> Void)?
     var onConnectionStateChange: ((TeamConnectionState) -> Void)?
 
     private var channel: RealtimeChannelV2?
@@ -27,6 +28,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
     private var statusTask: Task<Void, Never>?
     private var sessionSyncTask: Task<Void, Never>?
     private var hostTransferTask: Task<Void, Never>?
+    private var nicknameUpdateTask: Task<Void, Never>?
     private var lastSentAt: Date?
     private var isSubscribed = false
     private var knownMemberClientIDs = Set<String>()
@@ -86,6 +88,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
         let statusStream = channel.statusChange
         let sessionSyncStream = channel.broadcastStream(event: TeamRelayEvents.sessionSync)
         let hostTransferStream = channel.broadcastStream(event: TeamRelayEvents.hostTransfer)
+        let nicknameUpdateStream = channel.broadcastStream(event: TeamRelayEvents.nicknameUpdate)
 
         broadcastTask = Task { [weak self] in
             TeamRelayLogger.relay("broadcast 监听任务启动 event=\(TeamRelayEvents.broadcastUpdate)")
@@ -132,6 +135,15 @@ final class SupabaseTeamRelay: TeamRelayClient {
                 self.handleHostTransferMessage(message)
             }
             TeamRelayLogger.relay("hostTransfer 监听任务结束")
+        }
+
+        nicknameUpdateTask = Task { [weak self] in
+            TeamRelayLogger.relay("nicknameUpdate 监听任务启动 event=\(TeamRelayEvents.nicknameUpdate)")
+            for await message in nicknameUpdateStream {
+                guard let self else { continue }
+                self.handleNicknameUpdateMessage(message)
+            }
+            TeamRelayLogger.relay("nicknameUpdate 监听任务结束")
         }
 
         TeamRelayLogger.relay("subscribeWithError() 开始 channel.status=\(channel.status)")
@@ -187,11 +199,13 @@ final class SupabaseTeamRelay: TeamRelayClient {
         statusTask?.cancel()
         sessionSyncTask?.cancel()
         hostTransferTask?.cancel()
+        nicknameUpdateTask?.cancel()
         broadcastTask = nil
         presenceTask = nil
         statusTask = nil
         sessionSyncTask = nil
         hostTransferTask = nil
+        nicknameUpdateTask = nil
 
         let activeChannel = channel
         channel = nil
@@ -254,6 +268,27 @@ final class SupabaseTeamRelay: TeamRelayClient {
             )
         } catch {
             TeamRelayLogger.relay("hostTransfer 发送失败 error=\(error)")
+        }
+    }
+
+    func sendNicknameUpdate(_ payload: TeamNicknameUpdatePayload) async {
+        guard isSubscribed, let channel, let clientId else { return }
+        nickname = payload.nickname
+        let presence = TeamPresencePayload(
+            nickname: payload.nickname,
+            clientId: clientId.uuidString
+        )
+        do {
+            try await channel.track(presence)
+            try await channel.broadcast(
+                event: TeamRelayEvents.nicknameUpdate,
+                message: payload
+            )
+            TeamRelayLogger.session(
+                "nicknameUpdate 发送成功 nickname=\(payload.nickname) clientId=\(payload.clientId)"
+            )
+        } catch {
+            TeamRelayLogger.relay("nicknameUpdate 发送失败 error=\(error)")
         }
     }
 
@@ -371,6 +406,21 @@ final class SupabaseTeamRelay: TeamRelayClient {
         }
     }
 
+    private func handleNicknameUpdateMessage(_ message: JSONObject) {
+        if let payload = try? message["payload"]?.decode(as: TeamNicknameUpdatePayload.self) {
+            TeamRelayLogger.session(
+                "收到 nicknameUpdate nickname=\(payload.nickname) clientId=\(payload.clientId)"
+            )
+            onNicknameUpdate?(payload)
+            return
+        }
+        if let payload = try? message.decode(as: TeamNicknameUpdatePayload.self) {
+            onNicknameUpdate?(payload)
+        } else {
+            TeamRelayLogger.relay("无法解析 nicknameUpdate 消息")
+        }
+    }
+
     private func handlePresenceChange(_ action: any PresenceAction) {
         let rawJoinCount = action.joins.count
         let rawLeaveCount = action.leaves.count
@@ -405,6 +455,16 @@ final class SupabaseTeamRelay: TeamRelayClient {
 
     private func registerMemberJoin(_ member: TeamPresencePayload) {
         guard member.clientId != clientId?.uuidString else { return }
+        if knownMemberClientIDs.contains(member.clientId) {
+            onNicknameUpdate?(
+                TeamNicknameUpdatePayload(
+                    clientId: member.clientId,
+                    nickname: member.nickname,
+                    issuedAt: Date().timeIntervalSince1970
+                )
+            )
+            return
+        }
         guard knownMemberClientIDs.insert(member.clientId).inserted else { return }
         TeamRelayLogger.presence("成员加入 nickname=\(member.nickname) clientId=\(member.clientId)")
         onMemberJoined?(member)
@@ -445,11 +505,13 @@ final class SupabaseTeamRelay: TeamRelayClient {
         statusTask?.cancel()
         sessionSyncTask?.cancel()
         hostTransferTask?.cancel()
+        nicknameUpdateTask?.cancel()
         broadcastTask = nil
         presenceTask = nil
         statusTask = nil
         sessionSyncTask = nil
         hostTransferTask = nil
+        nicknameUpdateTask = nil
 
         await channel?.untrack()
         await channel?.unsubscribe()

@@ -15,6 +15,7 @@ struct FaceToFaceTeamSheet: View {
     @State private var createdCode = ""
     @State private var isWorking = false
     @State private var errorMessage: String?
+    @FocusState private var isJoinCodeFocused: Bool
 
     enum Mode {
         case choose
@@ -53,6 +54,13 @@ struct FaceToFaceTeamSheet: View {
         .onAppear {
             TeamRelayLogger.ui("FaceToFaceTeamSheet 打开 mode=\(mode)")
             TeamRelayLogger.logConfigDiagnostics()
+        }
+        .onChange(of: mode) { _, newMode in
+            if newMode == .join {
+                focusJoinCodeField()
+            } else {
+                isJoinCodeFocused = false
+            }
         }
     }
 
@@ -145,6 +153,7 @@ struct FaceToFaceTeamSheet: View {
                     RoundedRectangle(cornerRadius: 14)
                         .fill(Color.white.opacity(0.06))
                 )
+                .focused($isJoinCodeFocused)
                 .onChange(of: joinCode) { _, newValue in
                     joinCode = String(newValue.filter(\.isNumber).prefix(4))
                 }
@@ -170,6 +179,9 @@ struct FaceToFaceTeamSheet: View {
             }
             .disabled(joinCode.count != 4 || isWorking)
             .buttonStyle(.plain)
+        }
+        .onAppear {
+            focusJoinCodeField()
         }
     }
 
@@ -254,6 +266,13 @@ struct FaceToFaceTeamSheet: View {
 
     private func defaultNickname() -> String {
         "徒步者\(Int.random(in: 100...999))"
+    }
+
+    private func focusJoinCodeField() {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            isJoinCodeFocused = true
+        }
     }
 }
 

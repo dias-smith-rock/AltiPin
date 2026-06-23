@@ -117,6 +117,28 @@ final class TeamSessionStore: ObservableObject {
         showBecameHostAlert = false
     }
 
+    @discardableResult
+    func updateSelfNickname(_ rawNickname: String) async -> String? {
+        guard isInRoom, let selfID = selfMemberID else { return nil }
+        let trimmed = rawNickname.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard let index = members.firstIndex(where: { $0.id == selfID }) else { return nil }
+
+        var member = members[index]
+        member.nickname = trimmed
+        replaceMember(at: index, with: member)
+
+        guard let clientId = relay.localClientId, !clientId.isEmpty else { return trimmed }
+        let payload = TeamNicknameUpdatePayload(
+            clientId: clientId,
+            nickname: trimmed,
+            issuedAt: Date().timeIntervalSince1970
+        )
+        TeamRelayLogger.session("updateSelfNickname -> \(trimmed)")
+        await relay.sendNicknameUpdate(payload)
+        return trimmed
+    }
+
     func ingestSelfSnapshot(from store: OutdoorDashboardStore) {
         guard isInRoom, let selfID = selfMemberID,
               let index = members.firstIndex(where: { $0.id == selfID }) else {
@@ -340,6 +362,12 @@ final class TeamSessionStore: ObservableObject {
 
         relay.onHostTransfer = { [weak self] payload in
             self?.applyHostTransfer(payload)
+        }
+
+        relay.onNicknameUpdate = { [weak self] payload in
+            guard let self else { return }
+            if let localId = relay.localClientId, payload.clientId == localId { return }
+            applyRemoteNicknameUpdate(clientId: payload.clientId, nickname: payload.nickname)
         }
 
         relay.onSessionSync = { [weak self] payload in
@@ -577,6 +605,19 @@ final class TeamSessionStore: ObservableObject {
         if becameHost, payload.announcePromotion, !wasAlreadyHost {
             showBecameHostAlert = true
         }
+    }
+
+    private func applyRemoteNicknameUpdate(clientId: String, nickname: String) {
+        guard let index = members.firstIndex(where: { $0.clientId == clientId }) else {
+            TeamRelayLogger.session("applyRemoteNicknameUpdate 跳过：未找到 clientId=\(clientId)")
+            return
+        }
+        var member = members[index]
+        member.nickname = nickname
+        replaceMember(at: index, with: member)
+        TeamRelayLogger.session(
+            "applyRemoteNicknameUpdate clientId=\(clientId) nickname=\(nickname)"
+        )
     }
 
     private func promoteNextHostAfterDeparture(announcePromotion: Bool) {

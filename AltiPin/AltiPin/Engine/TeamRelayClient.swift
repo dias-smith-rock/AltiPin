@@ -88,6 +88,7 @@ enum TeamRelayEvents {
     static let broadcastUpdate = TeamRelayConfiguration.broadcastEvent
     static let sessionSync = TeamRelayConfiguration.sessionSyncEvent
     static let hostTransfer = TeamRelayConfiguration.hostTransferEvent
+    static let nicknameUpdate = TeamRelayConfiguration.nicknameUpdateEvent
 }
 
 struct TeamHostTransferPayload: Codable, Equatable, Sendable {
@@ -97,6 +98,12 @@ struct TeamHostTransferPayload: Codable, Equatable, Sendable {
     let issuedAt: TimeInterval
     /// 为 false 时仅同步房主身份，不弹窗（例如新成员入队时房主广播当前状态）。
     let announcePromotion: Bool
+}
+
+struct TeamNicknameUpdatePayload: Codable, Equatable, Sendable {
+    let clientId: String
+    let nickname: String
+    let issuedAt: TimeInterval
 }
 
 enum TeamSessionSyncAction: String, Codable, Sendable {
@@ -123,6 +130,7 @@ protocol TeamRelayClient: AnyObject {
     var onMemberLeft: ((String) -> Void)? { get set }
     var onSessionSync: ((TeamSessionSyncPayload) -> Void)? { get set }
     var onHostTransfer: ((TeamHostTransferPayload) -> Void)? { get set }
+    var onNicknameUpdate: ((TeamNicknameUpdatePayload) -> Void)? { get set }
     var onConnectionStateChange: ((TeamConnectionState) -> Void)? { get set }
 
     func connect(roomCode: String, nickname: String) async
@@ -130,6 +138,7 @@ protocol TeamRelayClient: AnyObject {
     func sendLocationUpdate(_ payload: TeamLocationPayload)
     func sendSessionSync(_ payload: TeamSessionSyncPayload)
     func sendHostTransfer(_ payload: TeamHostTransferPayload) async
+    func sendNicknameUpdate(_ payload: TeamNicknameUpdatePayload) async
 }
 
 extension TeamRelayClient {
@@ -148,6 +157,13 @@ extension TeamRelayClient {
     }
 
     func sendHostTransfer(_ payload: TeamHostTransferPayload) async {}
+
+    var onNicknameUpdate: ((TeamNicknameUpdatePayload) -> Void)? {
+        get { nil }
+        set { _ = newValue }
+    }
+
+    func sendNicknameUpdate(_ payload: TeamNicknameUpdatePayload) async {}
 
     var onConnectionStateChange: ((TeamConnectionState) -> Void)? {
         get { nil }

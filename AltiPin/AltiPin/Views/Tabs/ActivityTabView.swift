@@ -37,7 +37,10 @@ struct ActivityTabView: View {
                 if !isMapFullscreen {
                     VStack(spacing: 0) {
                         if teamSession.isInRoom {
-                            MemberFilterBar(teamSession: teamSession)
+                            MemberFilterBar(
+                                teamSession: teamSession,
+                                activityNickname: $activityNickname
+                            )
                         }
 
                         Spacer()

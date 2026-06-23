@@ -9,6 +9,7 @@ enum TeamRelayConfiguration {
     static let broadcastEvent = "broadcast_update"
     static let sessionSyncEvent = "session_sync"
     static let hostTransferEvent = "host_transfer"
+    static let nicknameUpdateEvent = "nickname_update"
     static let locationUpdateInterval: TimeInterval = 4
     static let metricsUpdateInterval: TimeInterval = 1
 

@@ -15,6 +15,7 @@ final class MockTeamRelay: TeamRelayClient {
     var onMemberLeft: ((String) -> Void)?
     var onSessionSync: ((TeamSessionSyncPayload) -> Void)?
     var onHostTransfer: ((TeamHostTransferPayload) -> Void)?
+    var onNicknameUpdate: ((TeamNicknameUpdatePayload) -> Void)?
     var onConnectionStateChange: ((TeamConnectionState) -> Void)?
 
     private var roomCode: String?
@@ -59,6 +60,10 @@ final class MockTeamRelay: TeamRelayClient {
 
     func sendHostTransfer(_ payload: TeamHostTransferPayload) async {
         onHostTransfer?(payload)
+    }
+
+    func sendNicknameUpdate(_ payload: TeamNicknameUpdatePayload) async {
+        onNicknameUpdate?(payload)
     }
 
     private func seedMockMembers(roomCode: String, excluding selfNickname: String) {
