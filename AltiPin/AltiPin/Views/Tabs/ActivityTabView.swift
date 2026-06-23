@@ -3,6 +3,7 @@
 //  AltiPin
 //
 
+import Combine
 import SwiftUI
 import UIKit
 
@@ -105,6 +106,16 @@ struct ActivityTabView: View {
             .onChange(of: teamSession.selfLocationSyncNonce) { _, _ in
                 syncSelfLocation()
             }
+            .onReceive(
+                Timer.publish(
+                    every: TeamRelayConfiguration.locationUpdateInterval,
+                    on: .main,
+                    in: .common
+                ).autoconnect()
+            ) { _ in
+                guard teamSession.isInRoom else { return }
+                syncSelfLocation()
+            }
         }
     }
 
@@ -128,8 +139,8 @@ struct ActivityTabView: View {
     #if DEBUG
     private func applyDebugSimulatorSetupIfNeeded() {
         #if targetEnvironment(simulator)
+        // 仅注入模拟 GPS，不自动创建本地假房间（假房间不走 Supabase，队友无法收到位置广播）。
         store.applyDebugSimulatorTeamLocationIfNeeded()
-        teamSession.configureDebugSimulatorHostIfNeeded(nickname: activityNickname)
         #endif
     }
     #endif

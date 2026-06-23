@@ -36,8 +36,9 @@ final class TeamSessionStore: ObservableObject {
         roomCode != nil
     }
 
+    /// 当前房间内的队员人数（Presence 在房即计入，与位置刷新间隔无关）。
     var onlineMemberCount: Int {
-        members.filter { $0.connectionTier() == .online }.count
+        members.count
     }
 
     var visibleMembers: [TeamMember] {
@@ -242,6 +243,7 @@ final class TeamSessionStore: ObservableObject {
                 "onMemberJoined 回调 nickname=\(presence.nickname) clientId=\(presence.clientId)"
             )
             self?.addRemoteMemberIfNeeded(presence: presence)
+            self?.requestSelfLocationSync()
         }
 
         relay.onMemberUpdate = { [weak self] envelope in

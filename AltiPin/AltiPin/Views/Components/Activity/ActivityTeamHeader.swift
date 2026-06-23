@@ -22,6 +22,7 @@ struct ActivityTeamHeader: ToolbarContent {
                         .font(.caption2)
                         .foregroundStyle(subtitleColor)
                 }
+                .id("team-header-\(teamSession.members.count)-\(teamSession.connectionTierRefreshTick)")
             }
 
             ToolbarItem(placement: .topBarTrailing) {
