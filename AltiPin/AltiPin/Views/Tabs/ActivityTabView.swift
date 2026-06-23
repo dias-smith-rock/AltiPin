@@ -63,7 +63,6 @@ struct ActivityTabView: View {
             .animation(.easeInOut(duration: 0.22), value: isMapFullscreen)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
-            .toolbar(isMapFullscreen ? .hidden : .visible, for: .tabBar)
             .toolbarBackground(.black, for: .navigationBar)
             .toolbarBackground(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
@@ -169,6 +168,7 @@ struct ActivityTabView: View {
                 guard teamSession.isInRoom else { return }
                 syncSelfSnapshot()
             }
+            .preference(key: TabBarHiddenPreferenceKey.self, value: isMapFullscreen)
         }
     }
 

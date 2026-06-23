@@ -6,57 +6,47 @@
 import SwiftUI
 import SwiftData
 
-private enum AppTab: Hashable {
-    case compass
-    case altitude
-    case gps
-    case activity
-    case timeline
-}
-
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
     @StateObject private var store = OutdoorDashboardStore()
     @StateObject private var weatherService = CompassWeatherService()
     @State private var selectedTab: AppTab = .compass
+    @State private var isTabBarHidden = false
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            CompassTabView(store: store, weatherService: weatherService)
-                .tabItem {
-                    Label("指南针", systemImage: "location.north.line.fill")
+        VStack(spacing: 0) {
+            Group {
+                switch selectedTab {
+                case .compass:
+                    CompassTabView(store: store, weatherService: weatherService)
+                case .altitude:
+                    AltitudeTabView(store: store, weatherService: weatherService)
+                case .gps:
+                    GPSTabView(store: store)
+                case .activity:
+                    ActivityTabView(store: store)
+                case .geoCamera:
+                    GeoCameraTabView(store: store, weatherService: weatherService)
+                case .timeline:
+                    HomeTimelineView()
                 }
-                .tag(AppTab.compass)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            AltitudeTabView(store: store, weatherService: weatherService)
-                .tabItem {
-                    Label("海拔", systemImage: "mountain.2.fill")
-                }
-                .tag(AppTab.altitude)
-
-            GPSTabView(store: store)
-                .tabItem {
-                    Label("测速", systemImage: "speedometer")
-                }
-                .tag(AppTab.gps)
-
-            ActivityTabView(store: store)
-                .tabItem {
-                    Label("运动", systemImage: "figure.walk")
-                }
-                .tag(AppTab.activity)
-
-            HomeTimelineView()
-                .tabItem {
-                    Label("记录", systemImage: "list.bullet")
-                }
-                .tag(AppTab.timeline)
+            if !isTabBarHidden {
+                AppTabBar(selectedTab: $selectedTab)
+            }
         }
+        .preferredColorScheme(.dark)
+        .onPreferenceChange(TabBarHiddenPreferenceKey.self) { isTabBarHidden = $0 }
         .onAppear {
             store.configure(modelContext: modelContext)
             store.startMonitoring()
         }
         .onChange(of: selectedTab) { _, tab in
+            if tab != .activity {
+                isTabBarHidden = false
+            }
             if tab == .altitude {
                 store.refreshNavigationEnvironmentForAltitudeTab()
             }
@@ -66,5 +56,5 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
-        .modelContainer(for: [TripEntity.self, BuildingCalibrationEntity.self, FootprintEntity.self], inMemory: true)
+        .modelContainer(for: [TripEntity.self, BuildingCalibrationEntity.self, FootprintEntity.self, GeoMediaEntity.self], inMemory: true)
 }

@@ -17,6 +17,7 @@ struct AltiPinApp: App {
             TripEntity.self,
             BuildingCalibrationEntity.self,
             FootprintEntity.self,
+            GeoMediaEntity.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
