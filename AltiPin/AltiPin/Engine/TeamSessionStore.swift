@@ -16,6 +16,7 @@ final class TeamSessionStore: ObservableObject {
     @Published private(set) var lastConnectionError: String?
     @Published private(set) var selfLocationSyncNonce = 0
     @Published private(set) var connectionTierRefreshTick = 0
+    @Published private(set) var isRoomCreator = false
 
     private let relay: TeamRelayClient
     private let maxRecentPoints = 20
@@ -45,6 +46,11 @@ final class TeamSessionStore: ObservableObject {
         members.filter { visibleMemberIDs.contains($0.id) }
     }
 
+    /// 入队后是否可操控运动会话（仅创建者；加入者只读看数据）。
+    var canControlActivitySession: Bool {
+        !isInRoom || isRoomCreator
+    }
+
     func createRoom(nickname: String) async {
         let code = Self.generateRoomCode()
         TeamRelayLogger.session("createRoom 请求 nickname=\(nickname) generatedCode=\(code)")
@@ -72,6 +78,7 @@ final class TeamSessionStore: ObservableObject {
         members = []
         visibleMemberIDs = []
         selfMemberID = nil
+        isRoomCreator = false
         connectionState = .idle
         lastConnectionError = nil
         TeamRelayLogger.session("leaveRoom 完成 state=idle")
@@ -164,6 +171,7 @@ final class TeamSessionStore: ObservableObject {
 
         selfMemberID = selfMember.id
         roomCode = DebugTeamFixtures.roomCode
+        isRoomCreator = true
         members = [selfMember]
         visibleMemberIDs = [selfMember.id]
         connectionState = .connected
@@ -189,6 +197,7 @@ final class TeamSessionStore: ObservableObject {
         lastConnectionError = nil
         connectionState = .connecting
         roomCode = code
+        isRoomCreator = isCreator
 
         TeamRelayLogger.session("joinRoom 开始 code=\(code) nickname=\(nickname) isCreator=\(isCreator)")
 
@@ -228,8 +237,6 @@ final class TeamSessionStore: ObservableObject {
             requestSelfLocationSync()
             TeamRelayLogger.session("joinRoom 成功 ✅ room=\(roomCode ?? "nil") members=\(members.count)")
         }
-
-        _ = isCreator
     }
 
     private func configureRelayHandlers() {

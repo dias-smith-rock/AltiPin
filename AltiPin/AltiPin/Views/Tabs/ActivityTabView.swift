@@ -41,7 +41,9 @@ struct ActivityTabView: View {
 
                         VStack(spacing: 10) {
                             metricsOverlay
-                            sessionControlBar
+                            if teamSession.canControlActivitySession {
+                                sessionControlBar
+                            }
                         }
                         .padding(.horizontal, 16)
                         .padding(.bottom, 12)
