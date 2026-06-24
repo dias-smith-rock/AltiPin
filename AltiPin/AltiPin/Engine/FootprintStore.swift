@@ -17,7 +17,7 @@ final class FootprintStore {
         self.modelContext = modelContext
     }
 
-    func loadRecent(maxCount: Int = FootprintConfig.maxFootprints) -> [FootprintPoint] {
+    func loadRecent(maxCount: Int = FootprintConfig.effectiveMaxFootprints) -> [FootprintPoint] {
         let descriptor = FetchDescriptor<FootprintEntity>(
             sortBy: [SortDescriptor(\.timestamp, order: .forward)]
         )
@@ -32,7 +32,7 @@ final class FootprintStore {
     func save(_ footprint: FootprintPoint) {
         let entity = FootprintEntity(from: footprint)
         modelContext.insert(entity)
-        trimToMax(FootprintConfig.maxFootprints)
+        trimToMax(FootprintConfig.effectiveMaxFootprints)
         try? modelContext.save()
     }
 
@@ -67,7 +67,7 @@ final class FootprintStore {
             modelContext.insert(FootprintEntity(from: footprint))
         }
 
-        trimToMax(FootprintConfig.maxFootprints)
+        trimToMax(FootprintConfig.effectiveMaxFootprints)
         try? modelContext.save()
     }
 

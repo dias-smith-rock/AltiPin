@@ -60,7 +60,7 @@ final class FootprintTrackingEngine: ObservableObject {
             )
         }
 
-        let footprints = deduplicatedFootprints(Array(converted.suffix(FootprintConfig.maxFootprints)))
+        let footprints = deduplicatedFootprints(Array(converted.suffix(FootprintConfig.effectiveMaxFootprints)))
         guard footprints.count >= 2 else { return }
 
         footprintStore?.replaceAll(with: footprints)
@@ -70,6 +70,20 @@ final class FootprintTrackingEngine: ObservableObject {
 
         NSLog("FootprintTrackingEngine: backfill from history \(footprints.count) points")
     }
+
+    #if DEBUG
+    /// 模拟器调试：注入 mock 脚印，便于查看海拔曲线。
+    func seedSimulatorMockFootprintsIfNeeded() {
+        #if targetEnvironment(simulator)
+        let mocks = FootprintPoint.simulatorMockFootprints
+        footprintStore?.replaceAll(with: mocks)
+        recentFootprints = mocks
+        lastFootprintCommittedAt = mocks.last?.timestamp
+        syncPersistState(from: mocks.last)
+        NSLog("FootprintTrackingEngine: seeded \(mocks.count) simulator mock footprints")
+        #endif
+    }
+    #endif
 
     func reset() {
         recentFootprints = []
@@ -215,8 +229,8 @@ final class FootprintTrackingEngine: ObservableObject {
         )
 
         recentFootprints.append(footprint)
-        if recentFootprints.count > FootprintConfig.maxFootprints {
-            recentFootprints.removeFirst(recentFootprints.count - FootprintConfig.maxFootprints)
+        if recentFootprints.count > FootprintConfig.effectiveMaxFootprints {
+            recentFootprints.removeFirst(recentFootprints.count - FootprintConfig.effectiveMaxFootprints)
         }
 
         lastFootprintCommittedAt = footprint.timestamp

@@ -552,6 +552,9 @@ struct AltitudeTabView: View {
         footprintEngine.backfillFromHistoryIfNeeded(
             historyPoints: RecentHistoryBuffer.shared.points
         )
+        #if DEBUG
+        footprintEngine.seedSimulatorMockFootprintsIfNeeded()
+        #endif
         seedFootprintIfNeeded()
     }
 

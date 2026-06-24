@@ -44,64 +44,70 @@ enum FootprintConfig {
     static let persistMinIntervalSeconds: TimeInterval = 60
     static let persistMinElevationDeltaMeters = 0.3
     static let persistMinHorizontalDeltaMeters = 2.0
+
+    #if DEBUG
+    static let simulatorMockCount = maxFootprints
+    #endif
+
+    static var effectiveMaxFootprints: Int { maxFootprints }
 }
 
 extension Array where Element == FootprintPoint {
     /// 固定 10 槽窗口内的 X 轴槽位（0-based），部分填充时从右侧「当前」向左生长。
     func chartSlotIndex(for footprint: FootprintPoint) -> Int? {
         guard let index = firstIndex(where: { $0.id == footprint.id }) else { return nil }
-        return (FootprintConfig.maxFootprints - count) + index
+        return (FootprintConfig.effectiveMaxFootprints - count) + index
     }
 }
 
 extension FootprintPoint {
-    static var mockFootprints: [FootprintPoint] {
+    #if DEBUG
+    static var simulatorMockFootprints: [FootprintPoint] {
+        simulatorMockFootprints(count: FootprintConfig.simulatorMockCount)
+    }
+
+    static func simulatorMockFootprints(count: Int) -> [FootprintPoint] {
         let now = Date()
         var points: [FootprintPoint] = []
         var lat = 22.3678
         var lon = 114.1817
         var elevation = 64.0
 
-        for index in 0..<8 {
-            elevation += 3.0 + Double(index % 3) * 0.5
-            lat += 0.0004
-            lon += 0.0003
-            points.append(
-                FootprintPoint(
-                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                    elevation: elevation,
-                    timestamp: now.addingTimeInterval(Double(index - 19) * 180),
-                    isIndoor: false
+        for index in 0..<count {
+            if index >= count * 3 / 5, index <= count * 4 / 5 {
+                elevation = 82 + Double(index - count * 3 / 5) * 2.2
+                points.append(
+                    FootprintPoint(
+                        coordinate: CLLocationCoordinate2D(latitude: 22.372, longitude: 114.186),
+                        elevation: elevation,
+                        timestamp: now.addingTimeInterval(Double(index - count) * 120),
+                        isIndoor: true
+                    )
                 )
-            )
+            } else {
+                elevation += 2.4 + Double(index % 4) * 0.7
+                lat += 0.00032
+                lon += 0.00026
+                points.append(
+                    FootprintPoint(
+                        coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
+                        elevation: elevation,
+                        timestamp: now.addingTimeInterval(Double(index - count) * 150),
+                        isIndoor: false
+                    )
+                )
+            }
         }
 
-        let indoorSteps: [Double] = [82, 85, 85, 88, 88, 91]
-        for (offset, stepElevation) in indoorSteps.enumerated() {
-            points.append(
-                FootprintPoint(
-                    coordinate: CLLocationCoordinate2D(latitude: 22.372, longitude: 114.186),
-                    elevation: stepElevation,
-                    timestamp: now.addingTimeInterval(Double(offset - 11) * 120),
-                    isIndoor: true
-                )
-            )
-        }
+        return points
+    }
+    #endif
 
-        for index in 0..<6 {
-            elevation += 3.2
-            lat += 0.00035
-            lon += 0.00028
-            points.append(
-                FootprintPoint(
-                    coordinate: CLLocationCoordinate2D(latitude: lat, longitude: lon),
-                    elevation: elevation,
-                    timestamp: now.addingTimeInterval(Double(index - 5) * 150),
-                    isIndoor: false
-                )
-            )
-        }
-
-        return Array(points.suffix(FootprintConfig.maxFootprints))
+    static var mockFootprints: [FootprintPoint] {
+        #if DEBUG
+        simulatorMockFootprints
+        #else
+        []
+        #endif
     }
 }

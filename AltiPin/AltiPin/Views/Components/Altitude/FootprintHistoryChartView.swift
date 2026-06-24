@@ -35,7 +35,7 @@ struct FootprintHistoryChartView: View {
     @State private var lastHapticSlot: Int?
     @State private var lastHapticDate: Date?
 
-    private var windowSize: Int { FootprintConfig.maxFootprints }
+    private var windowSize: Int { FootprintConfig.effectiveMaxFootprints }
 
     /// 横轴：左=最早脚印，右=最新脚印。1 点居中；N≥2 时在 0…(windowSize-1) 均匀铺满。
     private func displaySlot(forArrayIndex index: Int) -> Int {
@@ -53,19 +53,41 @@ struct FootprintHistoryChartView: View {
         }
     }
 
-    /// 横轴刻度：≤8 个脚印全显示，更多时抽稀避免重叠。
+    /// 横轴刻度：最多 5 个，且相邻刻度槽位至少间隔 minSlotGap，避免右侧重叠。
     private var axisTickPlottables: [FootprintPlottable] {
         let all = plottables
-        guard all.count > 8 else { return all }
+        guard all.count > 1 else { return all }
 
-        var indices = Set([0, all.count - 1])
-        let step = max(1, all.count / 6)
-        var index = step
-        while index < all.count - 1 {
-            indices.insert(index)
-            index += step
+        let maxTicks = min(5, all.count)
+        let minSlotGap = max(2, windowSize / 5)
+
+        var candidateIndices = Set([0, all.count - 1])
+        if maxTicks > 2 {
+            let step = max(1, (all.count - 1) / (maxTicks - 1))
+            var index = step
+            while index < all.count - 1 {
+                candidateIndices.insert(index)
+                index += step
+            }
         }
-        return indices.sorted().map { all[$0] }
+
+        var ticks: [FootprintPlottable] = []
+        for index in candidateIndices.sorted() {
+            let item = all[index]
+            if let last = ticks.last, item.slot - last.slot < minSlotGap {
+                if index == all.count - 1 {
+                    ticks[ticks.count - 1] = item
+                }
+                continue
+            }
+            ticks.append(item)
+        }
+
+        if ticks.count == 1, let last = all.last, last.id != ticks[0].id {
+            ticks.append(last)
+        }
+
+        return ticks
     }
 
     private var plottableBySlot: [Int: FootprintPlottable] {
