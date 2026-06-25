@@ -22,6 +22,11 @@ struct GPSTabView: View {
             || store.speedSessionDistanceMeters > 0
     }
 
+    /// 停止测速后表盘与读数归零；测速进行中显示实时 GPS 速度。
+    private var gaugeSpeed: Double {
+        store.isSpeedSessionActive ? store.speedKmh : 0
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             gpsHeader
@@ -34,7 +39,7 @@ struct GPSTabView: View {
                 .padding(.bottom, 8)
 
             SpeedometerGaugeView(
-                currentSpeed: store.speedKmh,
+                currentSpeed: gaugeSpeed,
                 maxSpeed: selectedMode.maxSpeed,
                 majorTickInterval: selectedMode.majorTickInterval
             )
