@@ -6,6 +6,7 @@
 import AVFoundation
 import Foundation
 import SwiftData
+import SwiftUI
 import UIKit
 
 enum GeoMediaSortOrder: String, CaseIterable, Identifiable {
@@ -13,6 +14,13 @@ enum GeoMediaSortOrder: String, CaseIterable, Identifiable {
     case oldestFirst
 
     var id: String { rawValue }
+
+    var titleKey: LocalizedStringKey {
+        switch self {
+        case .newestFirst: "Newest First"
+        case .oldestFirst: "Oldest First"
+        }
+    }
 
     var title: String {
         switch self {

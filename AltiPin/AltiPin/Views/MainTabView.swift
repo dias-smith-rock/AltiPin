@@ -39,6 +39,9 @@ struct MainTabView: View {
                 AppTabBar(selectedTab: $selectedTab)
             }
         }
+        .environment(\.locale, languageManager.locale)
+        .environment(\.layoutDirection, languageManager.layoutDirection)
+        .id(languageManager.refreshGeneration)
         .preferredColorScheme(.dark)
         .environment(\.presentAppSettings) {
             showSettings = true
@@ -46,6 +49,9 @@ struct MainTabView: View {
         .sheet(isPresented: $showSettings) {
             AppSettingsSheet(onClose: { showSettings = false })
                 .environmentObject(languageManager)
+                .environment(\.locale, languageManager.locale)
+                .environment(\.layoutDirection, languageManager.layoutDirection)
+                .id(languageManager.refreshGeneration)
         }
         .onPreferenceChange(TabBarHiddenPreferenceKey.self) { isTabBarHidden = $0 }
         .onAppear {

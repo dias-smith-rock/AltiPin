@@ -88,6 +88,7 @@ struct AppSettingsButton: View {
 }
 
 struct AppSettingsSheet: View {
+    @EnvironmentObject private var languageManager: AppLanguageManager
     let onClose: () -> Void
 
     var body: some View {
@@ -103,12 +104,15 @@ struct AppSettingsSheet: View {
                     }
                 }
         }
+        .environment(\.locale, languageManager.locale)
+        .environment(\.layoutDirection, languageManager.layoutDirection)
         .preferredColorScheme(.dark)
     }
 }
 
 #Preview("Settings Sheet") {
     AppSettingsSheet(onClose: {})
+        .environmentObject(AppLanguageManager())
 }
 
 #Preview("Settings Button") {

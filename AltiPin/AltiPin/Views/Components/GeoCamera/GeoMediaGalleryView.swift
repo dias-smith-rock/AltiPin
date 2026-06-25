@@ -104,11 +104,15 @@ struct GeoMediaGalleryView: View {
             Menu {
                 Picker("Sort", selection: $sortOrder) {
                     ForEach(GeoMediaSortOrder.allCases) { order in
-                        Text(order.title).tag(order)
+                        Text(order.titleKey).tag(order)
                     }
                 }
             } label: {
-                Label(sortOrder.title, systemImage: "arrow.up.arrow.down")
+                Label {
+                    Text(sortOrder.titleKey)
+                } icon: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.white.opacity(0.85))
             }

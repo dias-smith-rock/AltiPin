@@ -7,7 +7,7 @@ import SwiftUI
 
 struct AltitudeSectionHeader: View {
     let icon: String
-    let title: String
+    let title: LocalizedStringKey
     var trailingText: String?
 
     var body: some View {
@@ -38,6 +38,6 @@ struct AltitudeSectionHeader: View {
 }
 
 #Preview {
-    AltitudeSectionHeader(icon: "globe.asia.australia.fill", title: L10n.t("Coordinates"), trailingText: "±6.10m")
+    AltitudeSectionHeader(icon: "globe.asia.australia.fill", title: "Coordinates", trailingText: "±6.10m")
         .background(Color.black)
 }

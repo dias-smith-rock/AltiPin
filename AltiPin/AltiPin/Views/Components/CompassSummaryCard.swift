@@ -6,7 +6,7 @@
 import SwiftUI
 
 struct CompassSummaryCard: View {
-    let title: String
+    let title: LocalizedStringKey
     let icon: String
     let value: String
 

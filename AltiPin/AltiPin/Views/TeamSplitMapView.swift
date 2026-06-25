@@ -167,7 +167,7 @@ struct TeamSplitMapView: View {
             ),
             arrowEdge: .top
         ) {
-            Text("[该队员信号不佳，最后在线：\(user.minutesSinceLastSeen())分钟前]")
+            Text(L10n.format("Poor signal — last online %lld min ago", user.minutesSinceLastSeen()))
                 .font(.subheadline)
                 .foregroundStyle(.primary)
                 .padding()
@@ -189,7 +189,7 @@ struct TeamSplitMapView: View {
         let markers = userElevationMarkers
 
         return VStack(alignment: .leading, spacing: 10) {
-            Text("全员海拔对齐")
+            Text("Team Elevation Alignment")
                 .font(.headline)
                 .padding(.horizontal, 16)
                 .padding(.top, 12)
@@ -197,8 +197,8 @@ struct TeamSplitMapView: View {
             Chart {
                 ForEach(terrainSamples) { sample in
                     AreaMark(
-                        x: .value("距离", sample.distanceKm),
-                        y: .value("海拔", sample.elevation)
+                        x: .value("Distance", sample.distanceKm),
+                        y: .value("Elevation", sample.elevation)
                     )
                     .foregroundStyle(
                         LinearGradient(
@@ -213,8 +213,8 @@ struct TeamSplitMapView: View {
                     .interpolationMethod(.catmullRom)
 
                     LineMark(
-                        x: .value("距离", sample.distanceKm),
-                        y: .value("海拔", sample.elevation)
+                        x: .value("Distance", sample.distanceKm),
+                        y: .value("Elevation", sample.elevation)
                     )
                     .foregroundStyle(Color(red: 0.92, green: 0.72, blue: 0.12))
                     .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
@@ -223,8 +223,8 @@ struct TeamSplitMapView: View {
 
                 ForEach(markers) { marker in
                     PointMark(
-                        x: .value("距离", marker.distanceKm),
-                        y: .value("海拔", marker.elevation)
+                        x: .value("Distance", marker.distanceKm),
+                        y: .value("Elevation", marker.elevation)
                     )
                     .foregroundStyle(marker.color)
                     .symbolSize(marker.tier == .disconnected ? 90 : 150)
@@ -240,8 +240,8 @@ struct TeamSplitMapView: View {
                     }
                 }
             }
-            .chartXAxisLabel("相对距离 (km)")
-            .chartYAxisLabel("海拔 (m)")
+            .chartXAxisLabel("Relative Distance (km)")
+            .chartYAxisLabel("Elevation (m)")
             .chartYScale(domain: chartYDomain)
             .chartXScale(domain: chartXDomain)
             .padding(.horizontal, 12)

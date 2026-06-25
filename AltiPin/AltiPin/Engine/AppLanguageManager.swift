@@ -85,11 +85,8 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 
 @MainActor
 final class AppLanguageManager: ObservableObject {
-    @Published var selected: AppLanguage {
-        didSet {
-            UserDefaults.standard.set(selected.rawValue, forKey: AppLanguage.storageKey)
-        }
-    }
+    @Published private(set) var selected: AppLanguage
+    @Published private(set) var refreshGeneration = 0
 
     var locale: Locale { selected.resolvedLocale }
 
@@ -97,13 +94,17 @@ final class AppLanguageManager: ObservableObject {
         locale.language.languageCode?.identifier == "ar" ? .rightToLeft : .leftToRight
     }
 
-    var refreshToken: String { selected.rawValue }
-
     init() {
-        selected = AppLanguage.persisted
+        let persisted = AppLanguage.persisted
+        selected = persisted
+        L10n.updateActiveLocale(persisted.resolvedLocale)
     }
 
     func select(_ language: AppLanguage) {
+        guard language != selected else { return }
         selected = language
+        UserDefaults.standard.set(language.rawValue, forKey: AppLanguage.storageKey)
+        L10n.updateActiveLocale(locale)
+        refreshGeneration += 1
     }
 }

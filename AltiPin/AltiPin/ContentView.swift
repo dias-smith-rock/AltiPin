@@ -16,7 +16,10 @@ struct ContentView: View {
             .environmentObject(languageManager)
             .environment(\.locale, languageManager.locale)
             .environment(\.layoutDirection, languageManager.layoutDirection)
-            .id(languageManager.refreshToken)
+            .id(languageManager.refreshGeneration)
+            .onChange(of: languageManager.selected) { _, _ in
+                L10n.updateActiveLocale(languageManager.locale)
+            }
     }
 }
 

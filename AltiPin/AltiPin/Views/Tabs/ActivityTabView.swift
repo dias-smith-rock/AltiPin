@@ -293,17 +293,17 @@ struct ActivityTabView: View {
     private var metricsOverlay: some View {
         HStack(spacing: 10) {
             metricPill(
-                title: L10n.t("Speed"),
+                title: "Speed",
                 value: String(format: "%.1f", store.speedKmh),
                 unit: "km/h"
             )
             metricPill(
-                title: L10n.t("Duration"),
+                title: "Duration",
                 value: durationText,
                 unit: nil
             )
             metricPill(
-                title: L10n.t("Distance"),
+                title: "Distance",
                 value: String(format: "%.1f", store.cumulativeDistanceMeters / 1000),
                 unit: "km"
             )
@@ -334,7 +334,7 @@ struct ActivityTabView: View {
 
             if showsPauseControl {
                 sessionButton(
-                    title: L10n.t("Pause"),
+                    title: "Pause",
                     systemImage: "pause.fill",
                     isEnabled: store.activitySessionPhase == .running,
                     fill: Color.orange.opacity(0.88)
@@ -345,7 +345,7 @@ struct ActivityTabView: View {
             }
 
             sessionButton(
-                title: L10n.t("Stop"),
+                title: "Stop",
                 systemImage: "stop.fill",
                 isEnabled: canStopActivitySession,
                 fill: Color.red.opacity(0.88)
@@ -355,7 +355,7 @@ struct ActivityTabView: View {
             }
 
             sessionButton(
-                title: L10n.t("Reset"),
+                title: "Reset",
                 systemImage: "arrow.counterclockwise",
                 isEnabled: canResetActivitySession,
                 fill: Color.white.opacity(0.14)
@@ -374,11 +374,11 @@ struct ActivityTabView: View {
         !teamSession.isInRoom || !teamSession.isRoomCreator
     }
 
-    private var startButtonTitle: String {
+    private var startButtonTitle: LocalizedStringKey {
         if showsPauseControl, store.activitySessionPhase == .paused {
-            return L10n.t("Continue")
+            return "Continue"
         }
-        return L10n.t("Start")
+        return "Start"
     }
 
     private var canResetActivitySession: Bool {
@@ -393,7 +393,7 @@ struct ActivityTabView: View {
     }
 
     private func sessionButton(
-        title: String,
+        title: LocalizedStringKey,
         systemImage: String,
         isEnabled: Bool,
         fill: Color,
@@ -422,7 +422,7 @@ struct ActivityTabView: View {
         .disabled(!isEnabled)
     }
 
-    private func metricPill(title: String, value: String, unit: String?) -> some View {
+    private func metricPill(title: LocalizedStringKey, value: String, unit: String?) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .font(.caption2)

@@ -7,7 +7,7 @@ import SwiftUI
 
 struct AltitudeMetricItem: Identifiable {
     let id = UUID()
-    let label: String
+    let label: LocalizedStringKey
     let value: String
 }
 
@@ -63,8 +63,8 @@ struct AltitudeMetricGrid: View {
 
 #Preview {
     AltitudeMetricGrid(items: [
-        AltitudeMetricItem(label: L10n.t("Celsius"), value: "99.69°C"),
-        AltitudeMetricItem(label: L10n.t("Fahrenheit"), value: "211.44°F"),
+        AltitudeMetricItem(label: "Celsius", value: "99.69°C"),
+        AltitudeMetricItem(label: "Fahrenheit", value: "211.44°F"),
     ])
     .background(Color.black)
 }

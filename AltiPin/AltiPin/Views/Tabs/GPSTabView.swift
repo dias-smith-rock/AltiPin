@@ -192,11 +192,11 @@ struct GPSTabView: View {
 
             AltitudeMetricGrid(
                 items: [
-                    AltitudeMetricItem(label: L10n.t("Duration"), value: statDurationText),
-                    AltitudeMetricItem(label: L10n.t("Average Speed"), value: statAverageSpeedText),
-                    AltitudeMetricItem(label: L10n.t("Distance"), value: statDistanceText),
-                    AltitudeMetricItem(label: L10n.t("Max Speed"), value: statMaxSpeedText),
-                    AltitudeMetricItem(label: L10n.t("Elevation Gain"), value: statElevationGainText),
+                    AltitudeMetricItem(label: "Duration", value: statDurationText),
+                    AltitudeMetricItem(label: "Average Speed", value: statAverageSpeedText),
+                    AltitudeMetricItem(label: "Distance", value: statDistanceText),
+                    AltitudeMetricItem(label: "Max Speed", value: statMaxSpeedText),
+                    AltitudeMetricItem(label: "Elevation Gain", value: statElevationGainText),
                 ],
                 columns: 3
             )

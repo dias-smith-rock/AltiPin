@@ -121,11 +121,11 @@ struct AltitudeTabView: View {
         VStack(spacing: 0) {
             AltitudeSectionHeader(
                 icon: "arrow.triangle.branch",
-                title: L10n.t("Environment Mode"),
+                title: "Environment Mode",
                 trailingText: store.isManualNavigationOverride ? L10n.t("Manual") : L10n.t("Auto")
             )
 
-            Picker(L10n.t("Environment Mode"), selection: environmentModeSelection) {
+            Picker("Environment Mode", selection: environmentModeSelection) {
                 ForEach(NavigationEnvironmentControlSelection.allCases) { option in
                     Text(environmentControlLabel(option)).tag(option)
                 }
@@ -135,14 +135,14 @@ struct AltitudeTabView: View {
             .padding(.bottom, 8)
 
             if store.isManualNavigationOverride {
-                Text(L10n.t("Auto detection paused. Switch indoor/outdoor manually."))
+                Text("Auto detection paused. Switch indoor/outdoor manually.")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
             } else {
-                Text(L10n.t("Automatically detects indoor/outdoor from GPS and motion."))
+                Text("Automatically detects indoor/outdoor from GPS and motion.")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.55))
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -163,7 +163,7 @@ struct AltitudeTabView: View {
         VStack(spacing: 0) {
             AltitudeSectionHeader(
                 icon: "building.2.fill",
-                title: L10n.t("Indoor Floor"),
+                title: "Indoor Floor",
                 trailingText: store.isIndoorFloorCalibrated ? L10n.t("Calibrated") : L10n.t("Needs Calibration")
             )
 
@@ -175,7 +175,7 @@ struct AltitudeTabView: View {
                 } label: {
                     HStack {
                         Image(systemName: "slider.horizontal.3")
-                        Text(L10n.t("Set Current Floor"))
+                        Text("Set Current Floor")
                     }
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(AltitudeTheme.accent)
@@ -192,7 +192,7 @@ struct AltitudeTabView: View {
                 } label: {
                     HStack {
                         Image(systemName: "arrow.triangle.2.circlepath")
-                        Text(L10n.t("Recalibrate Floor"))
+                        Text("Recalibrate Floor")
                     }
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.6))
@@ -207,17 +207,17 @@ struct AltitudeTabView: View {
 
     private var indoorFloorMetrics: [AltitudeMetricItem] {
         var items: [AltitudeMetricItem] = [
-            AltitudeMetricItem(label: L10n.t("Inferred Floor"), value: indoorFloorText),
-            AltitudeMetricItem(label: L10n.t("Baseline Pressure"), value: indoorBaselinePressureText),
-            AltitudeMetricItem(label: L10n.t("Current Pressure"), value: currentPressureText),
-            AltitudeMetricItem(label: L10n.t("Location Accuracy"), value: indoorAccuracyText),
+            AltitudeMetricItem(label: "Inferred Floor", value: indoorFloorText),
+            AltitudeMetricItem(label: "Baseline Pressure", value: indoorBaselinePressureText),
+            AltitudeMetricItem(label: "Current Pressure", value: currentPressureText),
+            AltitudeMetricItem(label: "Location Accuracy", value: indoorAccuracyText),
         ]
 
         if let source = store.floorCalibrationSource {
-            items.append(AltitudeMetricItem(label: L10n.t("Calibration Source"), value: calibrationSourceText(source)))
+            items.append(AltitudeMetricItem(label: "Calibration Source", value: calibrationSourceText(source)))
         }
         if let label = store.matchedBuildingLabel, !label.isEmpty {
-            items.append(AltitudeMetricItem(label: L10n.t("Building"), value: label))
+            items.append(AltitudeMetricItem(label: "Building", value: label))
         }
 
         return items
@@ -240,26 +240,26 @@ struct AltitudeTabView: View {
                         Text(L10n.format("Current floor: Floor %lld", calibrationFloor))
                     }
                 } header: {
-                    Text(L10n.t("Floor"))
+                    Text("Floor")
                 } footer: {
-                    Text(L10n.t("Set your actual floor. Future floor changes will be inferred from air pressure."))
+                    Text("Set your actual floor. Future floor changes will be inferred from air pressure.")
                 }
 
-                Section(L10n.t("Building Name (Optional)")) {
-                    TextField(L10n.t("e.g. Office Building"), text: $calibrationLabel)
+                Section("Building Name (Optional)") {
+                    TextField("e.g. Office Building", text: $calibrationLabel)
                 }
 
                 if store.elevationMeters > 0 {
                     Section {
-                        LabeledContent(L10n.t("Reference Elevation"), value: "\(Int(store.elevationMeters.rounded())) m")
+                        LabeledContent("Reference Elevation", value: "\(Int(store.elevationMeters.rounded())) m")
                     }
                 }
             }
-            .navigationTitle(isRecalibrate ? L10n.t("Recalibrate Floor") : L10n.t("Set Current Floor"))
+            .navigationTitle(isRecalibrate ? "Recalibrate Floor" : "Set Current Floor")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(L10n.t("Cancel")) {
+                    Button("Cancel") {
                         if isRecalibrate {
                             showRecalibrateSheet = false
                         } else {
@@ -268,7 +268,7 @@ struct AltitudeTabView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.t("Confirm")) {
+                    Button("Confirm") {
                         let label = calibrationLabel.trimmingCharacters(in: .whitespacesAndNewlines)
                         if isRecalibrate {
                             store.recalibrateIndoorFloor(
@@ -316,21 +316,21 @@ struct AltitudeTabView: View {
     #if DEBUG
     private var environmentDebugSection: some View {
         VStack(spacing: 0) {
-            AltitudeSectionHeader(icon: "ant.fill", title: L10n.t("Environment Diagnosis (DEBUG)"))
+            AltitudeSectionHeader(icon: "ant.fill", title: "Environment Diagnosis (DEBUG)")
 
             AltitudeMetricGrid(items: [
-                AltitudeMetricItem(label: L10n.t("Detection"), value: store.navigationEnvironmentDiagnostic),
+                AltitudeMetricItem(label: "Detection", value: store.navigationEnvironmentDiagnostic),
                 AltitudeMetricItem(
-                    label: L10n.t("Horizontal Accuracy"),
+                    label: "Horizontal Accuracy",
                     value: store.horizontalAccuracy >= 0
                         ? String(format: "%.1fm", store.horizontalAccuracy) : "—"
                 ),
                 AltitudeMetricItem(
-                    label: L10n.t("Vertical Accuracy"),
+                    label: "Vertical Accuracy",
                     value: store.verticalAccuracy >= 0
                         ? String(format: "%.1fm", store.verticalAccuracy) : "invalid"
                 ),
-                AltitudeMetricItem(label: L10n.t("Summary"), value: store.navigationEnvironmentDebugSummary),
+                AltitudeMetricItem(label: "Summary", value: store.navigationEnvironmentDebugSummary),
             ])
         }
     }
@@ -340,13 +340,13 @@ struct AltitudeTabView: View {
         VStack(spacing: 0) {
             AltitudeSectionHeader(
                 icon: "globe.asia.australia.fill",
-                title: L10n.t("Coordinates"),
+                title: "Coordinates",
                 trailingText: horizontalAccuracyText
             )
 
             HStack(spacing: 0) {
-                coordinateColumn(title: L10n.t("East Longitude"), value: store.longitudeDMS)
-                coordinateColumn(title: L10n.t("North Latitude"), value: store.latitudeDMS)
+                coordinateColumn(title: "East Longitude", value: store.longitudeDMS)
+                coordinateColumn(title: "North Latitude", value: store.latitudeDMS)
             }
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
@@ -355,15 +355,15 @@ struct AltitudeTabView: View {
 
     private var airDataSection: some View {
         VStack(spacing: 0) {
-            AltitudeSectionHeader(icon: "cloud.fill", title: L10n.t("Air Data"))
+            AltitudeSectionHeader(icon: "cloud.fill", title: "Air Data")
 
             AltitudeMetricGrid(items: [
                 AltitudeMetricItem(
-                    label: L10n.t("Oxygen Content"),
+                    label: "Oxygen Content",
                     value: String(format: "%.2f g/m³", oxygenContent)
                 ),
                 AltitudeMetricItem(
-                    label: L10n.t("Oxygen Ratio"),
+                    label: "Oxygen Ratio",
                     value: String(format: "%.1f%%", oxygenRatio)
                 ),
             ])
@@ -372,27 +372,27 @@ struct AltitudeTabView: View {
 
     private var magneticFieldSection: some View {
         VStack(spacing: 0) {
-            AltitudeSectionHeader(icon: "location.north.fill", title: L10n.t("Magnetic Field"))
+            AltitudeSectionHeader(icon: "location.north.fill", title: "Magnetic Field")
 
             AltitudeMetricGrid(items: [
                 AltitudeMetricItem(
-                    label: L10n.t("Magnetic Flux Density"),
+                    label: "Magnetic Flux Density",
                     value: String(format: "%.1f μT", store.magneticFieldStrength)
                 ),
-                AltitudeMetricItem(label: L10n.t("X-axis"), value: String(format: "%.1f", store.magneticFieldX)),
-                AltitudeMetricItem(label: L10n.t("Y-axis"), value: String(format: "%.1f", store.magneticFieldY)),
-                AltitudeMetricItem(label: L10n.t("Z-axis"), value: String(format: "%.1f", store.magneticFieldZ)),
+                AltitudeMetricItem(label: "X-axis", value: String(format: "%.1f", store.magneticFieldX)),
+                AltitudeMetricItem(label: "Y-axis", value: String(format: "%.1f", store.magneticFieldY)),
+                AltitudeMetricItem(label: "Z-axis", value: String(format: "%.1f", store.magneticFieldZ)),
             ])
         }
     }
 
     private var pressureSection: some View {
         VStack(spacing: 0) {
-            AltitudeSectionHeader(icon: "gauge.with.needle", title: L10n.t("Air Pressure"))
+            AltitudeSectionHeader(icon: "gauge.with.needle", title: "Air Pressure")
 
             AltitudeMetricGrid(items: [
                 AltitudeMetricItem(
-                    label: L10n.t("Millimeters of Mercury"),
+                    label: "Millimeters of Mercury",
                     value: pressureMmHgText
                 ),
             ])
@@ -401,15 +401,15 @@ struct AltitudeTabView: View {
 
     private var boilingPointSection: some View {
         VStack(spacing: 0) {
-            AltitudeSectionHeader(icon: "cup.and.saucer.fill", title: L10n.t("Boiling Point of Water"))
+            AltitudeSectionHeader(icon: "cup.and.saucer.fill", title: "Boiling Point of Water")
 
             AltitudeMetricGrid(items: [
                 AltitudeMetricItem(
-                    label: L10n.t("Celsius"),
+                    label: "Celsius",
                     value: String(format: "%.2f°C", boilingPointCelsius)
                 ),
                 AltitudeMetricItem(
-                    label: L10n.t("Fahrenheit"),
+                    label: "Fahrenheit",
                     value: String(format: "%.2f°F", boilingPointFahrenheit)
                 ),
             ])
@@ -418,17 +418,17 @@ struct AltitudeTabView: View {
 
     private var weatherSection: some View {
         VStack(spacing: 0) {
-            AltitudeSectionHeader(icon: "cloud.sun.fill", title: L10n.t("Weather"))
+            AltitudeSectionHeader(icon: "cloud.sun.fill", title: "Weather")
 
             AltitudeMetricGrid(items: [
-                AltitudeMetricItem(label: L10n.t("Temperature"), value: temperatureText),
-                AltitudeMetricItem(label: L10n.t("Feels Like"), value: apparentTemperatureText),
-                AltitudeMetricItem(label: L10n.t("Conditions"), value: weatherService.conditionName),
-                AltitudeMetricItem(label: L10n.t("Humidity"), value: humidityText),
-                AltitudeMetricItem(label: L10n.t("Wind Direction"), value: weatherService.windDirectionName),
-                AltitudeMetricItem(label: L10n.t("Wind Scale"), value: windLevelText),
-                AltitudeMetricItem(label: L10n.t("Wind Speed"), value: windSpeedText),
-                AltitudeMetricItem(label: L10n.t("Wind Direction Angle"), value: windDirectionDegreesText),
+                AltitudeMetricItem(label: "Temperature", value: temperatureText),
+                AltitudeMetricItem(label: "Feels Like", value: apparentTemperatureText),
+                AltitudeMetricItem(label: "Conditions", value: weatherService.conditionName),
+                AltitudeMetricItem(label: "Humidity", value: humidityText),
+                AltitudeMetricItem(label: "Wind Direction", value: weatherService.windDirectionName),
+                AltitudeMetricItem(label: "Wind Scale", value: windLevelText),
+                AltitudeMetricItem(label: "Wind Speed", value: windSpeedText),
+                AltitudeMetricItem(label: "Wind Direction Angle", value: windDirectionDegreesText),
             ])
         }
     }
@@ -450,7 +450,7 @@ struct AltitudeTabView: View {
         }
     }
 
-    private func coordinateColumn(title: String, value: String) -> some View {
+    private func coordinateColumn(title: LocalizedStringKey, value: String) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title)
                 .font(.caption)
@@ -575,7 +575,7 @@ struct AltitudeTabView: View {
                     .tint(AltitudeTheme.accent)
                     .scaleEffect(1.15)
 
-                Text(L10n.t("Fetching data…"))
+                Text("Fetching data…")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.white)
             }

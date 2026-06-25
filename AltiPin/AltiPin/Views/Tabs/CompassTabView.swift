@@ -119,17 +119,17 @@ struct CompassTabView: View {
     private var bottomSummaryCards: some View {
         HStack(spacing: 10) {
             CompassSummaryCard(
-                title: L10n.t("Elevation"),
+                title: "Elevation",
                 icon: "mountain.2.fill",
                 value: "\(Int(store.elevationMeters.rounded()))m"
             )
             CompassSummaryCard(
-                title: L10n.t("Air Pressure"),
+                title: "Air Pressure",
                 icon: "gauge.with.dots.needle.67percent",
                 value: pressureText
             )
             CompassSummaryCard(
-                title: L10n.t("Wind Direction"),
+                title: "Wind Direction",
                 icon: "wind",
                 value: weatherService.windDirectionName
             )
