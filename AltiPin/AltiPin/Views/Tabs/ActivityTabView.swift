@@ -4,18 +4,21 @@
 //
 
 import Combine
+import SwiftData
 import SwiftUI
 import UIKit
 
 struct ActivityTabView: View {
     @ObservedObject var store: OutdoorDashboardStore
     @StateObject private var teamSession = TeamSessionStore()
+    @Environment(\.modelContext) private var modelContext
     @AppStorage("activityNickname") private var activityNickname = ""
 
     @State private var showFaceToFaceSheet = false
     @State private var isMapFullscreen = false
     @State private var showResetConfirmation = false
     @State private var showLeaveConfirmation = false
+    @State private var statusMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -169,6 +172,18 @@ struct ActivityTabView: View {
                 syncSelfSnapshot()
             }
             .preference(key: TabBarHiddenPreferenceKey.self, value: isMapFullscreen)
+            .overlay(alignment: .bottom) {
+                if let statusMessage {
+                    Text(statusMessage)
+                        .font(.caption)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Capsule().fill(Color.white.opacity(0.15)))
+                        .padding(.bottom, isMapFullscreen ? 20 : 80)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
     }
 
@@ -207,6 +222,59 @@ struct ActivityTabView: View {
         store.resetActivitySession()
         if teamSession.isInRoom, teamSession.isRoomCreator {
             teamSession.broadcastSessionSync(.reset, nickname: activityNickname)
+        }
+    }
+
+    private func stopTeamActivity() {
+        let isTeamHost = teamSession.isInRoom && teamSession.isRoomCreator
+        var snapshot = store.currentActivitySessionSnapshot(includeCurrentLocation: true)
+
+        #if DEBUG
+        #if targetEnvironment(simulator)
+        if snapshot.points.count < 2 {
+            snapshot = ActivitySessionSnapshot(
+                points: store.recentHistoryPoints.count >= 2
+                    ? store.recentHistoryPoints
+                    : HistoryPoint.mockPoints,
+                duration: max(snapshot.duration, 60),
+                distanceMeters: max(snapshot.distanceMeters, 120),
+                startTime: snapshot.startTime,
+                endTime: snapshot.endTime
+            )
+        }
+        #endif
+        #endif
+
+        do {
+            let tripStore = TripRecordStore(modelContext: modelContext)
+            _ = try tripStore.saveSession(
+                points: snapshot.points,
+                duration: snapshot.duration,
+                distanceMeters: snapshot.distanceMeters,
+                startTime: snapshot.startTime,
+                endTime: snapshot.endTime
+            )
+            _ = store.stopActivitySession(endSession: !isTeamHost)
+            flashStatus("轨迹已保存")
+            if isTeamHost {
+                teamSession.transferHostToNextAfterStop()
+            }
+        } catch {
+            flashStatus(error.localizedDescription)
+        }
+    }
+
+    private func flashStatus(_ message: String) {
+        withAnimation {
+            statusMessage = message
+        }
+        Task {
+            try? await Task.sleep(for: .seconds(2))
+            await MainActor.run {
+                withAnimation {
+                    statusMessage = nil
+                }
+            }
         }
     }
 
@@ -287,6 +355,16 @@ struct ActivityTabView: View {
             }
 
             sessionButton(
+                title: "停止",
+                systemImage: "stop.fill",
+                isEnabled: canStopActivitySession,
+                fill: Color.red.opacity(0.88)
+            ) {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                stopTeamActivity()
+            }
+
+            sessionButton(
                 title: "重置",
                 systemImage: "arrow.counterclockwise",
                 isEnabled: canResetActivitySession,
@@ -319,6 +397,11 @@ struct ActivityTabView: View {
             || store.cumulativeDistanceMeters > 0
     }
 
+    private var canStopActivitySession: Bool {
+        (store.activitySessionPhase == .running || store.activitySessionPhase == .paused)
+            && (store.sessionDuration > 0 || store.cumulativeDistanceMeters > 0)
+    }
+
     private func sessionButton(
         title: String,
         systemImage: String,
@@ -327,14 +410,14 @@ struct ActivityTabView: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 Image(systemName: systemImage)
-                    .font(.caption.weight(.semibold))
+                    .font(.caption2.weight(.semibold))
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(.caption.weight(.semibold))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
             .foregroundStyle(isEnabled ? .white : .white.opacity(0.35))
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)

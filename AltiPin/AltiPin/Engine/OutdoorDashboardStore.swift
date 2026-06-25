@@ -16,6 +16,14 @@ enum ActivitySessionPhase: String, Sendable {
     case paused
 }
 
+struct ActivitySessionSnapshot: Sendable {
+    let points: [HistoryPoint]
+    let duration: TimeInterval
+    let distanceMeters: Double
+    let startTime: Date
+    let endTime: Date
+}
+
 @MainActor
 final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var heading: Double = 0
@@ -81,6 +89,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private var activitySegmentStartDate: Date?
     private var activityDurationTimer: Timer?
     private var activityLastDistanceSample: CLLocation?
+    private var activitySessionPoints: [HistoryPoint] = []
+    private var activitySessionStartedAt: Date?
     private var lastMagneticFieldUpdateDate: Date?
     private let magneticFieldUpdateInterval: TimeInterval = 0.5
 
@@ -198,8 +208,11 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
             activityAccumulatedDuration = 0
             sessionDuration = 0
             cumulativeDistanceMeters = 0
+            activitySessionPoints = []
+            activitySessionStartedAt = Date()
             activityLastDistanceSample = lastKnownLocation
             activitySessionPhase = .running
+            seedActivitySessionPointIfNeeded()
             beginActivityDurationSegment()
         case .paused:
             activitySessionPhase = .running
@@ -217,6 +230,46 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         activitySessionPhase = .paused
     }
 
+    /// 结束当前运动会话段并返回快照。`endSession == true` 时回到 idle；否则保留 running（组队房主移交用）。
+    @discardableResult
+    func stopActivitySession(endSession: Bool) -> ActivitySessionSnapshot {
+        if activitySessionPhase == .running {
+            freezeActivityDuration()
+            stopActivityDurationTimer()
+        }
+
+        appendActivitySessionPointIfNeeded(force: true)
+
+        let snapshot = currentActivitySessionSnapshot()
+
+        if endSession {
+            resetActivitySession()
+        } else {
+            resetActivitySessionSegment()
+        }
+
+        return snapshot
+    }
+
+    func currentActivitySessionSnapshot(includeCurrentLocation: Bool = false) -> ActivitySessionSnapshot {
+        if includeCurrentLocation {
+            appendActivitySessionPointIfNeeded(force: true)
+        }
+
+        var duration = sessionDuration
+        if activitySessionPhase == .running, let start = activitySegmentStartDate {
+            duration = activityAccumulatedDuration + Date().timeIntervalSince(start)
+        }
+
+        return ActivitySessionSnapshot(
+            points: activitySessionPoints,
+            duration: duration,
+            distanceMeters: cumulativeDistanceMeters,
+            startTime: activitySessionStartedAt ?? Date(),
+            endTime: Date()
+        )
+    }
+
     func resetActivitySession() {
         activitySessionPhase = .idle
         activityAccumulatedDuration = 0
@@ -224,6 +277,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         sessionDuration = 0
         cumulativeDistanceMeters = 0
         activityLastDistanceSample = nil
+        activitySessionPoints = []
+        activitySessionStartedAt = nil
         stopActivityDurationTimer()
     }
 
@@ -384,6 +439,67 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         }
     }
 
+    private func resetActivitySessionSegment() {
+        activitySessionPoints = []
+        activitySessionStartedAt = Date()
+        activityAccumulatedDuration = 0
+        activitySegmentStartDate = nil
+        sessionDuration = 0
+        cumulativeDistanceMeters = 0
+        activityLastDistanceSample = lastKnownLocation
+        activitySessionPhase = .running
+        seedActivitySessionPointIfNeeded()
+        beginActivityDurationSegment()
+    }
+
+    private func seedActivitySessionPointIfNeeded() {
+        guard activitySessionPoints.isEmpty, let location = lastKnownLocation else { return }
+        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 else { return }
+
+        let elevation = resolvedElevation(for: location)
+        activitySessionPoints.append(
+            HistoryPoint(
+                timestamp: location.timestamp,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
+                elevation: elevation,
+                elevationDelta: 0,
+                isIndoor: navigationEnvironment == .indoor
+            )
+        )
+    }
+
+    private func appendActivitySessionPointIfNeeded(force: Bool = false) {
+        guard activitySessionPhase == .running || force else { return }
+        guard let location = lastKnownLocation else { return }
+        guard location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 else { return }
+
+        if !force {
+            if let last = activitySessionPoints.last {
+                let lastLocation = CLLocation(latitude: last.latitude, longitude: last.longitude)
+                guard location.distance(from: lastLocation) >= 2 else { return }
+            }
+        } else if !activitySessionPoints.isEmpty {
+            if let last = activitySessionPoints.last {
+                let lastLocation = CLLocation(latitude: last.latitude, longitude: last.longitude)
+                guard location.distance(from: lastLocation) >= 1 else { return }
+            }
+        }
+
+        let elevation = resolvedElevation(for: location)
+        let previousElevation = activitySessionPoints.last?.elevation ?? elevation
+        activitySessionPoints.append(
+            HistoryPoint(
+                timestamp: location.timestamp,
+                latitude: location.coordinate.latitude,
+                longitude: location.coordinate.longitude,
+                elevation: elevation,
+                elevationDelta: elevation - previousElevation,
+                isIndoor: navigationEnvironment == .indoor
+            )
+        )
+    }
+
     private func beginActivityDurationSegment() {
         activitySegmentStartDate = .now
         refreshActivityDurationDisplay()
@@ -513,6 +629,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
             if location.horizontalAccuracy >= 0, location.horizontalAccuracy <= 40 {
                 activityLastDistanceSample = location
             }
+
+            appendActivitySessionPointIfNeeded()
         }
 
         if isSpeedSessionActive {

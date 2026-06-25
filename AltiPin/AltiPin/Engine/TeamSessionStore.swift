@@ -117,6 +117,32 @@ final class TeamSessionStore: ObservableObject {
         showBecameHostAlert = false
     }
 
+    /// 房主停止并保存轨迹后，将会话房主移交给下一位队员（不结束全队运动会话）。
+    func transferHostToNextAfterStop() {
+        guard isInRoom, isRoomCreator, members.count > 1, let nextHost = nextHostMember() else {
+            TeamRelayLogger.session("transferHostToNextAfterStop 跳过：不在房间或无继任房主")
+            return
+        }
+
+        let payload = TeamHostTransferPayload(
+            newHostClientId: nextHost.clientId,
+            newHostNickname: nextHost.nickname,
+            previousHostClientId: relay.localClientId,
+            issuedAt: Date().timeIntervalSince1970,
+            announcePromotion: true
+        )
+        TeamRelayLogger.session(
+            "transferHostToNextAfterStop -> \(nextHost.nickname) clientId=\(nextHost.clientId)"
+        )
+
+        hostClientId = nextHost.clientId
+        isRoomCreator = false
+
+        Task {
+            await relay.sendHostTransfer(payload)
+        }
+    }
+
     @discardableResult
     func updateSelfNickname(_ rawNickname: String) async -> String? {
         guard isInRoom, let selfID = selfMemberID else { return nil }

@@ -113,9 +113,13 @@ struct HomeTimelineView: View {
     }
 
     private func normalModeRow(_ trip: TripEntity) -> some View {
-        TripRowContent(trip: trip)
-            .contentShape(Rectangle())
-            .onLongPressGesture(minimumDuration: 0.5) {
+        NavigationLink {
+            TripDetailView(trip: trip)
+        } label: {
+            TripRowContent(trip: trip)
+        }
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.5).onEnded { _ in
                 let generator = UIImpactFeedbackGenerator(style: .medium)
                 generator.impactOccurred()
                 withAnimation {
@@ -123,6 +127,7 @@ struct HomeTimelineView: View {
                     selectedTripIDs.insert(trip.id)
                 }
             }
+        )
     }
 
     private func editModeRow(_ trip: TripEntity) -> some View {
