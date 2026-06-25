@@ -97,12 +97,13 @@ final class FootprintTrackingEngine: ObservableObject {
         }
     }
 
-    /// 将当前位置/海拔写入脚印库：阈值内更新末条，超阈或空库则新增（不依赖运动门控）。
+    /// 空库时写入首条脚印（仅 Tab bootstrap 调用，不走 GPS 热路径）。
     func persistCurrentFootprintIfNeeded(
         location: CLLocation,
         elevation: Double,
         isIndoor: Bool
     ) {
+        guard recentFootprints.isEmpty else { return }
         guard location.horizontalAccuracy >= 0 else { return }
 
         commitFootprint(
@@ -193,32 +194,40 @@ final class FootprintTrackingEngine: ObservableObject {
                currentElevation: elevation,
                lastFootprint: last
            ) {
-            let updated = FootprintPoint(
-                id: last.id,
-                coordinate: location.coordinate,
+            return upsertLastFootprint(
+                location: location,
                 elevation: elevation,
-                timestamp: last.timestamp,
-                isIndoor: isIndoor
+                isIndoor: isIndoor,
+                reason: reason,
+                last: last
             )
+        }
 
-            guard FootprintTriggerEvaluator.shouldPersistUpdate(
-                candidate: updated,
-                lastPersisted: lastPersistedFootprint,
-                lastPersistedAt: lastPersistedAt
-            ) else {
+        if let last = recentFootprints.last {
+            if !isIndoor, elevation < FootprintConfig.minOutdoorElevationMeters {
+                NSLog("FootprintTrackingEngine: skipped \(reason.rawValue) abnormal elevation")
                 return .skipped
             }
 
-            recentFootprints[recentFootprints.count - 1] = updated
-            lastFootprintCommittedAt = updated.timestamp
-            footprintStore?.update(updated)
-            markPersisted(updated)
+            if FootprintTriggerEvaluator.isElevationNoise(
+                currentLocation: location,
+                currentElevation: elevation,
+                lastFootprint: last
+            ) {
+                NSLog("FootprintTrackingEngine: skipped \(reason.rawValue) elevation noise")
+                return .skipped
+            }
 
-            NSLog(
-                "FootprintTrackingEngine: updated \(reason.rawValue) " +
-                "ele=\(String(format: "%.1f", elevation))m count=\(recentFootprints.count)"
-            )
-            return .updated
+            if FootprintTriggerEvaluator.shouldBlockInsert(lastFootprintCommittedAt: lastFootprintCommittedAt) {
+                return upsertLastFootprint(
+                    location: location,
+                    elevation: elevation,
+                    isIndoor: isIndoor,
+                    reason: reason,
+                    last: last,
+                    bypassPersistThrottle: false
+                )
+            }
         }
 
         let footprint = FootprintPoint(
@@ -242,5 +251,44 @@ final class FootprintTrackingEngine: ObservableObject {
             "ele=\(String(format: "%.1f", elevation))m count=\(recentFootprints.count)"
         )
         return .inserted
+    }
+
+    @discardableResult
+    private func upsertLastFootprint(
+        location: CLLocation,
+        elevation: Double,
+        isIndoor: Bool,
+        reason: FootprintTriggerReason,
+        last: FootprintPoint,
+        bypassPersistThrottle: Bool = false
+    ) -> FootprintWriteMode {
+        let updated = FootprintPoint(
+            id: last.id,
+            coordinate: location.coordinate,
+            elevation: elevation,
+            timestamp: last.timestamp,
+            isIndoor: isIndoor
+        )
+
+        if !bypassPersistThrottle {
+            guard FootprintTriggerEvaluator.shouldPersistUpdate(
+                candidate: updated,
+                lastPersisted: lastPersistedFootprint,
+                lastPersistedAt: lastPersistedAt
+            ) else {
+                return .skipped
+            }
+        }
+
+        recentFootprints[recentFootprints.count - 1] = updated
+        lastFootprintCommittedAt = updated.timestamp
+        footprintStore?.update(updated)
+        markPersisted(updated)
+
+        NSLog(
+            "FootprintTrackingEngine: updated \(reason.rawValue) " +
+            "ele=\(String(format: "%.1f", elevation))m count=\(recentFootprints.count)"
+        )
+        return .updated
     }
 }

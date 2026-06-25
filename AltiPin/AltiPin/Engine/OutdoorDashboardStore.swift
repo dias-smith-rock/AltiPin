@@ -647,15 +647,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         guard horizontalAccuracy >= 0 else { return }
 
         let elevation = resolvedElevation(for: location)
-        let engine = FootprintTrackingEngine.shared
-
-        engine.persistCurrentFootprintIfNeeded(
-            location: location,
-            elevation: elevation,
-            isIndoor: navigationEnvironment == .indoor
-        )
-
-        engine.ingest(
+        FootprintTrackingEngine.shared.ingest(
             location: location,
             elevation: elevation,
             isIndoor: navigationEnvironment == .indoor,

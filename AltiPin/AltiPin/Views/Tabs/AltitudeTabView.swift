@@ -78,11 +78,7 @@ struct AltitudeTabView: View {
             refreshWeatherIfNeeded()
         }
         .onChange(of: store.latitude) { _, _ in
-            scheduleFootprintSideEffects()
             refreshWeatherIfNeeded()
-        }
-        .onChange(of: store.horizontalAccuracy) { _, _ in
-            scheduleFootprintSideEffects()
         }
         .onChange(of: store.longitude) { _, _ in
             refreshWeatherIfNeeded()
@@ -529,12 +525,6 @@ struct AltitudeTabView: View {
         return "\(Int(degrees.rounded()))°"
     }
 
-    private func scheduleFootprintSideEffects() {
-        Task { @MainActor in
-            seedFootprintIfNeeded()
-        }
-    }
-
     private func bootstrapFootprintHistory() {
         footprintEngine.reloadFromStore()
 
@@ -559,6 +549,7 @@ struct AltitudeTabView: View {
     }
 
     private func seedFootprintIfNeeded() {
+        guard footprintEngine.recentFootprints.isEmpty else { return }
         guard let location = store.currentLocation else { return }
 
         footprintEngine.persistCurrentFootprintIfNeeded(

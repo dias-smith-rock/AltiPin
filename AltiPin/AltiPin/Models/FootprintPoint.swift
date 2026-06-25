@@ -42,8 +42,14 @@ enum FootprintConfig {
 
     /// 原地更新末条脚印时的持久化节流（与触发阈值分离）。
     static let persistMinIntervalSeconds: TimeInterval = 60
+    /// 新增脚印的最小间隔（与 timeCapSeconds 对齐）。
+    static let minInsertIntervalSeconds: TimeInterval = 300
     static let persistMinElevationDeltaMeters = 0.3
     static let persistMinHorizontalDeltaMeters = 2.0
+    /// 垂直跳变超过此值且水平几乎不变时，视为海拔噪声。
+    static let maxVerticalJumpMeters = 30.0
+    static let elevationNoiseMaxHorizontalMeters = 5.0
+    static let minOutdoorElevationMeters = -100.0
 
     #if DEBUG
     static let simulatorMockCount = maxFootprints

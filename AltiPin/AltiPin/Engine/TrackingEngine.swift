@@ -465,11 +465,6 @@ final class TrackingEngine: NSObject {
                     self.beginIndoorFloorCalibrationIfNeeded(with: self.lastKnownLocation)
                     self.updateIndoorFloorEstimateIfNeeded()
                 }
-
-                if let location = self.lastKnownLocation,
-                   self.phase == .tracking || self.phase == .stationaryWatch {
-                    self.ingestFootprintIfNeeded(location: location)
-                }
             }
         }
     }
@@ -530,7 +525,6 @@ final class TrackingEngine: NSObject {
         evaluateNavigationEnvironment(with: latestLocation)
         updateHorizontalActivity(latestLocation)
         sampleChartPointIfNeeded(location: latestLocation)
-        ingestFootprintIfNeeded(location: latestLocation)
 
         guard phase == .tracking, navigationEnvironment == .outdoor else { return }
 
@@ -566,18 +560,6 @@ final class TrackingEngine: NSObject {
             longitude: location.coordinate.longitude,
             elevation: elevation,
             isIndoor: navigationEnvironment == .indoor
-        )
-    }
-
-    private func ingestFootprintIfNeeded(location: CLLocation) {
-        guard phase == .tracking || phase == .stationaryWatch else { return }
-
-        let elevation = fusedElevation(for: location)
-        FootprintTrackingEngine.shared.ingest(
-            location: location,
-            elevation: elevation,
-            isIndoor: navigationEnvironment == .indoor,
-            motionActivity: latestMotionActivity
         )
     }
 
