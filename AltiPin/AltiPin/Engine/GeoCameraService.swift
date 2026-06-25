@@ -15,8 +15,8 @@ enum GeoCameraCaptureMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .photo: "拍照"
-        case .video: "录像"
+        case .photo: L10n.t("Photo")
+        case .video: L10n.t("Video")
         }
     }
 }
@@ -153,7 +153,7 @@ final class GeoCameraService: NSObject, ObservableObject {
                   session.canAddInput(videoInput) else {
                 session.commitConfiguration()
                 Task { @MainActor in
-                    self.errorMessage = "无法访问相机"
+                    self.errorMessage = L10n.t("Cannot access camera")
                 }
                 return
             }
@@ -208,7 +208,7 @@ final class GeoCameraService: NSObject, ObservableObject {
             }
         } catch {
             Task { @MainActor in
-                self.errorMessage = "缩放失败"
+                self.errorMessage = L10n.t("Zoom failed")
             }
         }
     }
@@ -261,12 +261,12 @@ final class GeoCameraService: NSObject, ObservableObject {
 
     private func startRecordingOnQueue(metadata: GeoStampMetadata) {
         #if targetEnvironment(simulator)
-        publishError("模拟器不支持录像，请使用真机测试")
+        publishError(L10n.t("Recording is not supported in Simulator. Use a physical device."))
         return
         #endif
 
         guard session.isRunning else {
-            publishError("相机未就绪，请稍后再试")
+            publishError(L10n.t("Camera not ready. Please try again."))
             return
         }
 
@@ -275,7 +275,7 @@ final class GeoCameraService: NSObject, ObservableObject {
         configureMovieOutputConnections()
 
         guard isMovieOutputReadyForRecording else {
-            publishError("无法开始录像，请检查相机与麦克风权限")
+            publishError(L10n.t("Cannot start recording. Check camera and microphone permissions."))
             return
         }
 
@@ -341,7 +341,7 @@ extension GeoCameraService: AVCapturePhotoCaptureDelegate {
               let data = photo.fileDataRepresentation(),
               let image = UIImage(data: data) else {
             Task { @MainActor in
-                self.errorMessage = error?.localizedDescription ?? "拍照失败"
+                self.errorMessage = error?.localizedDescription ?? L10n.t("Photo capture failed")
             }
             return
         }

@@ -15,7 +15,7 @@ struct GeoCameraTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AppTabTopBar(title: "经纬相机")
+            AppTabTopBar(title: "Geo Camera")
 
             GeoMediaGalleryView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -62,7 +62,7 @@ struct GeoCameraTabView: View {
                 )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("拍摄")
+        .accessibilityLabel("Capture")
         .padding(.trailing, 20)
         .padding(.bottom, 72)
     }

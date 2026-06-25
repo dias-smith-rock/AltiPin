@@ -47,7 +47,7 @@ struct GeoStampMetadata: Equatable, Sendable {
     var overlayLines: [String] {
         var lines: [String] = []
         lines.append(coordinateLabel)
-        lines.append(String(format: "海拔 %.0f m", elevation))
+        lines.append(L10n.format("Elevation %.0f m", elevation))
         if !locality.isEmpty, locality != "—" {
             lines.append(locality)
         }

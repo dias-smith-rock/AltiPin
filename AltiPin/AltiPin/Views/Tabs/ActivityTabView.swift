@@ -90,28 +90,28 @@ struct ActivityTabView: View {
                         await teamSession.leaveRoom()
                     }
                 }
-                Button("取消", role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             } message: {
                 Text(teamSession.leaveConfirmationMessage)
             }
-            .alert("你自动成为房主", isPresented: $teamSession.showBecameHostAlert) {
-                Button("好的", role: .cancel) {
+            .alert("You Are Now Host", isPresented: $teamSession.showBecameHostAlert) {
+                Button("OK", role: .cancel) {
                     teamSession.acknowledgeBecameHostAlert()
                 }
             } message: {
-                Text("原房主已退出，你已接管队伍控制。")
+                Text("The previous host left. You now control the team.")
             }
             .confirmationDialog(
-                "重置运动会话",
+                "Reset Activity Session",
                 isPresented: $showResetConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("重置", role: .destructive) {
+                Button("Reset", role: .destructive) {
                     resetTeamActivity()
                 }
-                Button("取消", role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             } message: {
-                Text("将同步重置所有成员的速度、时长与行程数据。")
+                Text("This resets speed, duration, and distance for all members.")
             }
             .sheet(isPresented: $showFaceToFaceSheet) {
                 FaceToFaceTeamSheet(
@@ -245,7 +245,7 @@ struct ActivityTabView: View {
                 endTime: snapshot.endTime
             )
             _ = store.stopActivitySession(endSession: !isTeamHost)
-            flashStatus("轨迹已保存")
+            flashStatus(L10n.t("Track Saved"))
             if isTeamHost {
                 teamSession.transferHostToNextAfterStop()
             }
@@ -270,7 +270,7 @@ struct ActivityTabView: View {
 
     private func ensureNickname() {
         if activityNickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            activityNickname = "徒步者\(Int.random(in: 100...999))"
+            activityNickname = L10n.format("Hiker %lld", Int.random(in: 100...999))
         }
     }
 
@@ -293,17 +293,17 @@ struct ActivityTabView: View {
     private var metricsOverlay: some View {
         HStack(spacing: 10) {
             metricPill(
-                title: "速度",
+                title: L10n.t("Speed"),
                 value: String(format: "%.1f", store.speedKmh),
                 unit: "km/h"
             )
             metricPill(
-                title: "时长",
+                title: L10n.t("Duration"),
                 value: durationText,
                 unit: nil
             )
             metricPill(
-                title: "行程",
+                title: L10n.t("Distance"),
                 value: String(format: "%.1f", store.cumulativeDistanceMeters / 1000),
                 unit: "km"
             )
@@ -334,7 +334,7 @@ struct ActivityTabView: View {
 
             if showsPauseControl {
                 sessionButton(
-                    title: "暂停",
+                    title: L10n.t("Pause"),
                     systemImage: "pause.fill",
                     isEnabled: store.activitySessionPhase == .running,
                     fill: Color.orange.opacity(0.88)
@@ -345,7 +345,7 @@ struct ActivityTabView: View {
             }
 
             sessionButton(
-                title: "停止",
+                title: L10n.t("Stop"),
                 systemImage: "stop.fill",
                 isEnabled: canStopActivitySession,
                 fill: Color.red.opacity(0.88)
@@ -355,7 +355,7 @@ struct ActivityTabView: View {
             }
 
             sessionButton(
-                title: "重置",
+                title: L10n.t("Reset"),
                 systemImage: "arrow.counterclockwise",
                 isEnabled: canResetActivitySession,
                 fill: Color.white.opacity(0.14)
@@ -376,9 +376,9 @@ struct ActivityTabView: View {
 
     private var startButtonTitle: String {
         if showsPauseControl, store.activitySessionPhase == .paused {
-            return "继续"
+            return L10n.t("Continue")
         }
-        return "开始"
+        return L10n.t("Start")
     }
 
     private var canResetActivitySession: Bool {

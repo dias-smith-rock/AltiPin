@@ -53,7 +53,7 @@ struct HistoryToggleMapView: View {
                 .stroke(AltitudeTheme.accent, lineWidth: 4)
 
             if let start = displayPoints.first {
-                Annotation("起点", coordinate: start.coordinate, anchor: .center) {
+                Annotation(L10n.t("Start Point"), coordinate: start.coordinate, anchor: .center) {
                     Image(systemName: "play.circle.fill")
                         .font(.title3)
                         .symbolRenderingMode(.palette)
@@ -83,7 +83,7 @@ struct HistoryToggleMapView: View {
             Image(systemName: "map")
                 .font(.title2)
                 .foregroundStyle(.white.opacity(0.35))
-            Text("暂无轨迹数据")
+            Text("No Track Data")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.45))
         }

@@ -32,7 +32,9 @@ struct ActivityTopBar: View {
     private var leadingTitle: some View {
         if teamSession.isInRoom, let roomCode = teamSession.roomCode {
             VStack(alignment: .leading, spacing: 2) {
-                AppTabBarTitle(text: "队伍 \(roomCode)")
+                Text(L10n.format("Team %@", roomCode))
+                    .font(.headline)
+                    .foregroundStyle(.white.opacity(0.9))
 
                 Text(subtitleText)
                     .font(.caption2)
@@ -40,13 +42,13 @@ struct ActivityTopBar: View {
             }
             .id("team-header-\(teamSession.members.count)-\(teamSession.connectionTierRefreshTick)")
         } else {
-            AppTabBarTitle(text: "运动")
+            AppTabBarTitle(text: "Activity")
         }
     }
 
     private var faceToFaceButton: some View {
         Button(action: onFaceToFaceTapped) {
-            Text("面对面组队")
+            Text("Face to Face Team Up")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 12)
@@ -66,11 +68,11 @@ struct ActivityTopBar: View {
     private var subtitleText: String {
         switch teamSession.connectionState {
         case .disconnected:
-            "连接中断"
+            L10n.t("Disconnected")
         case .connecting:
-            "连接中…"
+            L10n.t("Connecting…")
         default:
-            "\(teamSession.onlineMemberCount) 人在线"
+            L10n.format("%lld online", teamSession.onlineMemberCount)
         }
     }
 

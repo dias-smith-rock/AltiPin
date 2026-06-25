@@ -63,8 +63,8 @@ struct AltitudeMetricGrid: View {
 
 #Preview {
     AltitudeMetricGrid(items: [
-        AltitudeMetricItem(label: "摄氏度", value: "99.69°C"),
-        AltitudeMetricItem(label: "华氏度", value: "211.44°F"),
+        AltitudeMetricItem(label: L10n.t("Celsius"), value: "99.69°C"),
+        AltitudeMetricItem(label: L10n.t("Fahrenheit"), value: "211.44°F"),
     ])
     .background(Color.black)
 }

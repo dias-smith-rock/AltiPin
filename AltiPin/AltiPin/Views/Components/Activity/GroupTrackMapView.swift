@@ -58,7 +58,7 @@ struct GroupTrackMapView: View {
                     .stroke(AltitudeTheme.accent, lineWidth: 4)
 
                 if let start = displayPoints.first {
-                    Annotation("起点", coordinate: start.coordinate, anchor: .center) {
+                    Annotation(L10n.t("Start Point"), coordinate: start.coordinate, anchor: .center) {
                         Image(systemName: "play.circle.fill")
                             .font(.title3)
                             .symbolRenderingMode(.palette)
@@ -67,7 +67,7 @@ struct GroupTrackMapView: View {
                 }
 
                 if let end = displayPoints.last {
-                    Annotation("当前位置", coordinate: end.coordinate, anchor: .center) {
+                    Annotation(L10n.t("Current Location"), coordinate: end.coordinate, anchor: .center) {
                         Image(systemName: "location.north.flash.fill")
                             .font(.title3)
                             .symbolRenderingMode(.palette)
@@ -92,7 +92,7 @@ struct GroupTrackMapView: View {
                     }
 
                     if let start = member.recentPoints.first, member.recentPoints.count >= 2 {
-                        Annotation("\(member.nickname) 起点", coordinate: start.coordinate, anchor: .center) {
+                        Annotation(L10n.format("%@ Start", member.nickname), coordinate: start.coordinate, anchor: .center) {
                             Image(systemName: "play.circle.fill")
                                 .font(.caption)
                                 .symbolRenderingMode(.palette)

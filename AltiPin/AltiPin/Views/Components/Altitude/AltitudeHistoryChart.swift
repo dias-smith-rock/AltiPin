@@ -27,9 +27,9 @@ struct AltitudeHistoryChart: View {
         VStack(spacing: 8) {
             if let maxElevation, let minElevation, !samples.isEmpty {
                 HStack {
-                    Text("最高 \(String(format: "%.1f", maxElevation))m")
+                    Text(L10n.format("Highest %.1fm", maxElevation))
                     Spacer()
-                    Text("最低 \(String(format: "%.1f", minElevation))m")
+                    Text(L10n.format("Lowest %.1fm", minElevation))
                 }
                 .font(.caption)
                 .foregroundStyle(AltitudeTheme.accent)
@@ -37,7 +37,7 @@ struct AltitudeHistoryChart: View {
             }
 
             if samples.isEmpty {
-                Text("暂无海拔历史数据")
+                Text(L10n.t("No elevation history yet"))
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.45))
                     .frame(height: 160)
@@ -46,8 +46,8 @@ struct AltitudeHistoryChart: View {
                 Chart {
                     ForEach(samples) { sample in
                         AreaMark(
-                            x: .value("时间", sample.date),
-                            y: .value("海拔", sample.elevation)
+                            x: .value(L10n.t("Time"), sample.date),
+                            y: .value(L10n.t("Elevation"), sample.elevation)
                         )
                         .foregroundStyle(
                             LinearGradient(
@@ -59,8 +59,8 @@ struct AltitudeHistoryChart: View {
                         .interpolationMethod(.catmullRom)
 
                         LineMark(
-                            x: .value("时间", sample.date),
-                            y: .value("海拔", sample.elevation)
+                            x: .value(L10n.t("Time"), sample.date),
+                            y: .value(L10n.t("Elevation"), sample.elevation)
                         )
                         .foregroundStyle(AltitudeTheme.chartLine)
                         .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
@@ -69,8 +69,8 @@ struct AltitudeHistoryChart: View {
 
                     if let maxSample = samples.max(by: { $0.elevation < $1.elevation }) {
                         PointMark(
-                            x: .value("时间", maxSample.date),
-                            y: .value("海拔", maxSample.elevation)
+                            x: .value(L10n.t("Time"), maxSample.date),
+                            y: .value(L10n.t("Elevation"), maxSample.elevation)
                         )
                         .foregroundStyle(.clear)
                         .annotation(position: .top, spacing: 4) {
@@ -83,8 +83,8 @@ struct AltitudeHistoryChart: View {
                     if let minSample = samples.min(by: { $0.elevation < $1.elevation }),
                        minSample.id != samples.max(by: { $0.elevation < $1.elevation })?.id {
                         PointMark(
-                            x: .value("时间", minSample.date),
-                            y: .value("海拔", minSample.elevation)
+                            x: .value(L10n.t("Time"), minSample.date),
+                            y: .value(L10n.t("Elevation"), minSample.elevation)
                         )
                         .foregroundStyle(.clear)
                         .annotation(position: .bottom, spacing: 4) {

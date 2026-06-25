@@ -38,6 +38,6 @@ struct AltitudeSectionHeader: View {
 }
 
 #Preview {
-    AltitudeSectionHeader(icon: "globe.asia.australia.fill", title: "经纬度", trailingText: "±6.10m")
+    AltitudeSectionHeader(icon: "globe.asia.australia.fill", title: L10n.t("Coordinates"), trailingText: "±6.10m")
         .background(Color.black)
 }

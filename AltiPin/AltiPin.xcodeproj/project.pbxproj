@@ -120,8 +120,16 @@
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
+				ar,
 				Base,
+				en,
+				es,
+				fr,
+				hi,
+				ja,
+				"pt-BR",
+				"zh-Hans",
+				"zh-Hant",
 			);
 			mainGroup = DD3C563D2FDFB9DC00B8AC17;
 			minimizedProjectReferenceProxies = 1;
@@ -296,12 +304,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "AltiPin/Config/Supabase-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = AltiPin;
-				INFOPLIST_KEY_NSCameraUsageDescription = "AltiPin 需要相机权限以拍摄带经纬度水印的照片与视频。";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AltiPin 需要麦克风权限以录制带地理信息水印的视频。";
-				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin 通过运动状态识别自动开始/停止记录，以节省电量。";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "AltiPin 需要相册写入权限以保存拍摄内容到系统相册。";
+				INFOPLIST_KEY_NSCameraUsageDescription = "AltiPin needs camera access to capture photos and videos with geo stamps.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin needs your location in the background to record tracks and elevation.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin needs your location to record tracks and elevation.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AltiPin needs microphone access to record videos with geo stamps.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin uses motion activity to auto start/stop recording and save battery.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "AltiPin needs photo library access to save captured content.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -339,12 +347,12 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "AltiPin/Config/Supabase-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = AltiPin;
-				INFOPLIST_KEY_NSCameraUsageDescription = "AltiPin 需要相机权限以拍摄带经纬度水印的照片与视频。";
-				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。";
-				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin 需要定位权限以记录轨迹与海拔。";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AltiPin 需要麦克风权限以录制带地理信息水印的视频。";
-				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin 通过运动状态识别自动开始/停止记录，以节省电量。";
-				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "AltiPin 需要相册写入权限以保存拍摄内容到系统相册。";
+				INFOPLIST_KEY_NSCameraUsageDescription = "AltiPin needs camera access to capture photos and videos with geo stamps.";
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "AltiPin needs your location in the background to record tracks and elevation.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "AltiPin needs your location to record tracks and elevation.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "AltiPin needs microphone access to record videos with geo stamps.";
+				INFOPLIST_KEY_NSMotionUsageDescription = "AltiPin uses motion activity to auto start/stop recording and save battery.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "AltiPin needs photo library access to save captured content.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

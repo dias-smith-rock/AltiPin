@@ -24,7 +24,7 @@ struct CompassTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AppTabTopBar(title: "指南针")
+            AppTabTopBar(title: "Compass")
 
             compassLocationRow
                 .padding(.horizontal, 20)
@@ -119,17 +119,17 @@ struct CompassTabView: View {
     private var bottomSummaryCards: some View {
         HStack(spacing: 10) {
             CompassSummaryCard(
-                title: "海拔",
+                title: L10n.t("Elevation"),
                 icon: "mountain.2.fill",
-                value: "\(Int(store.elevationMeters.rounded()))米"
+                value: "\(Int(store.elevationMeters.rounded()))m"
             )
             CompassSummaryCard(
-                title: "大气压",
+                title: L10n.t("Air Pressure"),
                 icon: "gauge.with.dots.needle.67percent",
                 value: pressureText
             )
             CompassSummaryCard(
-                title: "风向",
+                title: L10n.t("Wind Direction"),
                 icon: "wind",
                 value: weatherService.windDirectionName
             )

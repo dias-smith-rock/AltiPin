@@ -8,6 +8,7 @@ import SwiftData
 
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
+    @EnvironmentObject private var languageManager: AppLanguageManager
     @StateObject private var store = OutdoorDashboardStore()
     @StateObject private var weatherService = CompassWeatherService()
     @State private var selectedTab: AppTab = .compass
@@ -44,6 +45,7 @@ struct MainTabView: View {
         }
         .sheet(isPresented: $showSettings) {
             AppSettingsSheet(onClose: { showSettings = false })
+                .environmentObject(languageManager)
         }
         .onPreferenceChange(TabBarHiddenPreferenceKey.self) { isTabBarHidden = $0 }
         .onAppear {
@@ -63,5 +65,6 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(AppLanguageManager())
         .modelContainer(for: [TripEntity.self, BuildingCalibrationEntity.self, FootprintEntity.self, GeoMediaEntity.self], inMemory: true)
 }

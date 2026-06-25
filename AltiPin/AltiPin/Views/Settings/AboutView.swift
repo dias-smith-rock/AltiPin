@@ -20,7 +20,7 @@ struct AboutView: View {
                     Text("AltiPin")
                         .font(.title2.weight(.semibold))
 
-                    Text("户外轨迹与海拔记录工具")
+                    Text("Outdoor track and altitude recorder")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -30,7 +30,7 @@ struct AboutView: View {
             }
 
             Section {
-                infoRow(title: "版本", value: AppLinks.appVersionString)
+                infoRow(title: "Version", value: AppLinks.appVersionString)
                 infoRow(title: "Bundle ID", value: AppLinks.bundleIdentifier)
             }
 
@@ -38,7 +38,7 @@ struct AboutView: View {
                 Button {
                     openURL(AppLinks.websiteURL)
                 } label: {
-                    Label("访问官网", systemImage: "globe")
+                    Label("Visit Website", systemImage: "globe")
                 }
             }
 
@@ -55,7 +55,7 @@ struct AboutView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private func infoRow(title: String, value: String) -> some View {
+    private func infoRow(title: LocalizedStringKey, value: String) -> some View {
         HStack {
             Text(title)
             Spacer()

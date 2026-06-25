@@ -175,7 +175,10 @@ final class CompassWeatherService: ObservableObject {
 
     static func windDirectionName(for degrees: Double) -> String {
         let normalized = (degrees.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
-        let names = ["北风", "东北风", "东风", "东南风", "南风", "西南风", "西风", "西北风"]
+        let names = [
+            L10n.t("N Wind"), L10n.t("NE Wind"), L10n.t("E Wind"), L10n.t("SE Wind"),
+            L10n.t("S Wind"), L10n.t("SW Wind"), L10n.t("W Wind"), L10n.t("NW Wind"),
+        ]
         let index = Int((normalized + 22.5) / 45) % 8
         return names[index]
     }
@@ -183,33 +186,33 @@ final class CompassWeatherService: ObservableObject {
     static func conditionName(for condition: WeatherCondition) -> String {
         switch condition {
         case .clear, .mostlyClear, .hot:
-            return "晴"
+            return L10n.t("Clear")
         case .partlyCloudy:
-            return "多云"
+            return L10n.t("Cloudy")
         case .mostlyCloudy, .cloudy:
-            return "阴"
+            return L10n.t("Overcast")
         case .rain, .heavyRain, .drizzle, .sunShowers:
-            return "小雨"
+            return L10n.t("Light Rain")
         case .thunderstorms, .isolatedThunderstorms, .scatteredThunderstorms, .strongStorms:
-            return "雷雨"
+            return L10n.t("Thunderstorm")
         case .snow, .heavySnow, .flurries, .sunFlurries, .blizzard, .blowingSnow, .sleet, .freezingRain, .wintryMix:
-            return "雪"
+            return L10n.t("Snow")
         case .foggy, .haze, .smoky:
-            return "雾"
+            return L10n.t("Fog")
         case .windy, .breezy:
-            return "大风"
+            return L10n.t("Windy")
         case .hail:
-            return "冰雹"
+            return L10n.t("Hail")
         case .freezingDrizzle:
-            return "冻雨"
+            return L10n.t("Freezing Rain")
         case .tropicalStorm, .hurricane:
-            return "风暴"
+            return L10n.t("Storm")
         case .frigid:
-            return "严寒"
+            return L10n.t("Frigid")
         case .blowingDust:
-            return "沙尘"
+            return L10n.t("Dust")
         @unknown default:
-            return "未知"
+            return L10n.t("Unknown")
         }
     }
 }

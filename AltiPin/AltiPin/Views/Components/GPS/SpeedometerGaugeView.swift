@@ -51,8 +51,8 @@ struct SpeedometerGaugeView: View {
             speedReadout
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("速度表")
-        .accessibilityValue("\(clampedSpeed, format: .number.precision(.fractionLength(2))) 公里每小时")
+        .accessibilityLabel(L10n.t("Speedometer"))
+        .accessibilityValue("\(clampedSpeed.formatted(.number.precision(.fractionLength(2)))) km/h")
     }
 
     // MARK: - Gauge Face

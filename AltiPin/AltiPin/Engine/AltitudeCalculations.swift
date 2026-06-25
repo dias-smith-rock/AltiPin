@@ -61,18 +61,18 @@ enum AltitudeCalculations {
 
     static func conditionName(forWeatherCode code: Int) -> String {
         switch code {
-        case 0: return "晴"
-        case 1, 2: return "多云"
-        case 3: return "阴"
-        case 45, 48: return "雾"
-        case 51, 53, 55: return "毛毛雨"
-        case 56, 57: return "冻毛毛雨"
-        case 61, 63, 65, 80, 81, 82: return "小雨"
-        case 66, 67: return "冻雨"
-        case 71, 73, 75, 77, 85, 86: return "雪"
-        case 95: return "雷雨"
-        case 96, 99: return "冰雹雷雨"
-        default: return "未知"
+        case 0: return L10n.t("Clear")
+        case 1, 2: return L10n.t("Cloudy")
+        case 3: return L10n.t("Overcast")
+        case 45, 48: return L10n.t("Fog")
+        case 51, 53, 55: return L10n.t("Drizzle")
+        case 56, 57: return L10n.t("Freezing Drizzle")
+        case 61, 63, 65, 80, 81, 82: return L10n.t("Light Rain")
+        case 66, 67: return L10n.t("Freezing Rain")
+        case 71, 73, 75, 77, 85, 86: return L10n.t("Snow")
+        case 95: return L10n.t("Thunderstorm")
+        case 96, 99: return L10n.t("Hail Thunderstorm")
+        default: return L10n.t("Unknown")
         }
     }
 }

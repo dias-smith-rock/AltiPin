@@ -56,21 +56,21 @@ final class TeamSessionStore: ObservableObject {
     }
 
     var leaveButtonTitle: String {
-        "退出"
+        L10n.t("Leave")
     }
 
     var leaveConfirmationTitle: String {
-        "退出队伍"
+        L10n.t("Leave Team")
     }
 
     var leaveConfirmationMessage: String {
         if isRoomCreator {
             if members.count > 1 {
-                return "退出后房主将自动移交给下一位队员，其余成员可继续组队。"
+                return L10n.t("After leaving, the host role passes to the next member.")
             }
-            return "退出后你将离开房间。"
+            return L10n.t("You will leave the room.")
         }
-        return "退出后将离开当前队伍。"
+        return L10n.t("You will leave the current team.")
     }
 
     func createRoom(nickname: String) async {
@@ -345,8 +345,8 @@ final class TeamSessionStore: ObservableObject {
         if connectionState != .connected {
             lastConnectionError = relay.lastError
                 ?? (TeamRelayConfiguration.isSupabaseConfigured
-                    ? "无法连接组队服务，请检查网络后重试"
-                    : "Supabase 未正确配置，请检查 AltiPin.xcconfig 中的 SUPABASE_PROJECT_REF")
+                    ? L10n.t("Cannot connect to team service. Check your network.")
+                    : L10n.t("Supabase is not configured correctly. Check SUPABASE_PROJECT_REF in AltiPin.xcconfig."))
             TeamRelayLogger.session("joinRoom 失败，即将 abandonRoom error=\(lastConnectionError ?? "nil")")
             abandonRoom()
         } else {

@@ -26,9 +26,9 @@ struct TripDetailView: View {
 
                 if trackPoints.isEmpty {
                     ContentUnavailableView(
-                        "无轨迹数据",
+                        "No Track Data",
                         systemImage: "map",
-                        description: Text("未能加载此记录的 GPS 轨迹")
+                        description: Text("Could not load GPS track for this record.")
                     )
                     .frame(height: 280)
                 } else {
@@ -48,9 +48,9 @@ struct TripDetailView: View {
     private var statsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 16) {
-                statItem(title: "距离", value: formatDistance(trip.totalDistance))
-                statItem(title: "爬升", value: String(format: "%.0f m", trip.totalAscent))
-                statItem(title: "最高", value: String(format: "%.0f m", trip.maxElevation))
+                statItem(title: L10n.t("Distance"), value: formatDistance(trip.totalDistance))
+                statItem(title: L10n.t("Ascent"), value: String(format: "%.0f m", trip.totalAscent))
+                statItem(title: L10n.t("Highest"), value: String(format: "%.0f m", trip.maxElevation))
             }
 
             Text("\(formatDateTime(trip.startTime)) — \(formatDateTime(trip.endTime))")
@@ -67,7 +67,7 @@ struct TripDetailView: View {
                 .stroke(AltitudeTheme.accent, lineWidth: 4)
 
             if let start = trackPoints.first {
-                Annotation("起点", coordinate: start.coordinate, anchor: .center) {
+                Annotation(L10n.t("Start Point"), coordinate: start.coordinate, anchor: .center) {
                     Image(systemName: "play.circle.fill")
                         .font(.title3)
                         .symbolRenderingMode(.palette)
@@ -76,7 +76,7 @@ struct TripDetailView: View {
             }
 
             if let end = trackPoints.last {
-                Annotation("终点", coordinate: end.coordinate, anchor: .center) {
+                Annotation(L10n.t("End Point"), coordinate: end.coordinate, anchor: .center) {
                     Image(systemName: "flag.checkered.circle.fill")
                         .font(.title3)
                         .symbolRenderingMode(.palette)
@@ -111,8 +111,8 @@ struct TripDetailView: View {
 
     private func formatDateTime(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "M月d日 HH:mm"
+        formatter.locale = L10n.activeLocale
+        formatter.setLocalizedDateFormatFromTemplate("MMMdHHmm")
         return formatter.string(from: date)
     }
 

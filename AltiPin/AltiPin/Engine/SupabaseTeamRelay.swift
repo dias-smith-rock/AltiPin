@@ -39,14 +39,14 @@ final class SupabaseTeamRelay: TeamRelayClient {
         TeamRelayLogger.relay("connect 开始 room=\(roomCode) nickname=\(nickname)")
 
         guard TeamRelayConfiguration.isSupabaseConfigured else {
-            lastError = "Supabase 未配置。请在 AltiPin.xcconfig 填写 SUPABASE_PROJECT_REF 与 anon key，并确认 Supabase-Info.plist 已合并进 Info.plist。"
+            lastError = L10n.t("Supabase is not configured. Check AltiPin.xcconfig and Info.plist.")
             TeamRelayLogger.relay("失败：Supabase 未正确配置")
             onConnectionStateChange?(.disconnected)
             return
         }
 
         guard let client = SupabaseClientProvider.shared else {
-            lastError = "无法初始化 Supabase 客户端，请检查 URL 与 anon key 是否来自同一项目。"
+            lastError = L10n.t("Unable to initialize Supabase client. Check URL and anon key.")
             TeamRelayLogger.relay("失败：SupabaseClient 为 nil")
             onConnectionStateChange?(.disconnected)
             return
@@ -68,7 +68,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
         TeamRelayLogger.relay("realtimeV2.connect() 后 status=\(client.realtimeV2.status)")
 
         guard client.realtimeV2.status == .connected else {
-            lastError = "Realtime WebSocket 连接失败，请检查网络与 Supabase 项目状态。"
+            lastError = L10n.t("Realtime WebSocket connection failed. Check network and Supabase status.")
             TeamRelayLogger.relay("失败：WebSocket 未 connected，status=\(client.realtimeV2.status)")
             onConnectionStateChange?(.disconnected)
             return
@@ -151,7 +151,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
             try await channel.subscribeWithError()
             TeamRelayLogger.relay("subscribeWithError() 成功 channel.status=\(channel.status)")
         } catch {
-            lastError = "频道订阅失败：\(error.localizedDescription)。请在 Supabase SQL Editor 执行 supabase_realtime_policies.sql。"
+            lastError = L10n.format("Channel subscription failed: %@.", error.localizedDescription)
             TeamRelayLogger.relay("失败：subscribeWithError error=\(error)")
             isSubscribed = false
             onConnectionStateChange?(.disconnected)
@@ -162,7 +162,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
         let subscribed = await waitUntilSubscribed(channel: channel, timeoutSeconds: 15)
         TeamRelayLogger.relay("waitUntilSubscribed 结果=\(subscribed) 最终 channel.status=\(channel.status)")
         guard subscribed else {
-            lastError = "Realtime 频道订阅超时。请确认已执行 supabase_realtime_policies.sql 或开启 Realtime 公共访问。"
+            lastError = L10n.t("Realtime channel subscription timed out.")
             TeamRelayLogger.relay("失败：订阅超时")
             isSubscribed = false
             onConnectionStateChange?(.disconnected)
@@ -183,7 +183,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
             onConnectionStateChange?(.connected)
             flushPendingLocationIfNeeded()
         } catch {
-            lastError = "Presence 上线失败：\(error.localizedDescription)"
+            lastError = L10n.format("Presence join failed: %@.", error.localizedDescription)
             TeamRelayLogger.relay("失败：track(presence) error=\(error)")
             isSubscribed = false
             onConnectionStateChange?(.disconnected)
@@ -486,7 +486,7 @@ final class SupabaseTeamRelay: TeamRelayClient {
             isSubscribed = false
             if wasLive {
                 if lastError == nil {
-                    lastError = "Realtime 连接已断开"
+                    lastError = L10n.t("Realtime connection lost")
                 }
                 TeamRelayLogger.relay("channel 变为 unsubscribed lastError=\(lastError ?? "nil")")
                 onConnectionStateChange?(.disconnected)

@@ -73,12 +73,12 @@ struct AltitudeHeroHeader: View {
 
     private var heroSubtitle: String {
         guard isIndoorMode else {
-            if isManualNavigationOverride { return "当前海拔 · 手动室外" }
-            return "当前海拔:"
+            if isManualNavigationOverride { return L10n.t("Current Elevation · Manual Outdoor") }
+            return L10n.t("Current Elevation:")
         }
-        if needsFloorCalibration { return "室内模式 · 待校准" }
-        if isManualNavigationOverride { return "室内模式 · 手动" }
-        return "室内气压推断:"
+        if needsFloorCalibration { return L10n.t("Indoor Mode · Needs Calibration") }
+        if isManualNavigationOverride { return L10n.t("Indoor Mode · Manual") }
+        return L10n.t("Barometric Inference:")
     }
 
     private var heroPrimaryValue: String {
@@ -89,9 +89,9 @@ struct AltitudeHeroHeader: View {
             return "—"
         }
         if let floor = estimatedIndoorFloor {
-            return "\(floor) 楼"
+            return L10n.format("Floor %lld", floor)
         }
-        return "推算中…"
+        return L10n.t("Estimating…")
     }
 
     private var indoorModeBadge: some View {
@@ -107,13 +107,13 @@ struct AltitudeHeroHeader: View {
 
     private var indoorBadgeText: String {
         if needsFloorCalibration {
-            return "请设定当前楼层"
+            return L10n.t("Set Current Floor")
         }
         if floorCalibrationSource == .persisted {
             let name = matchedBuildingLabel.map { " \($0)" } ?? ""
-            return "已恢复历史校准\(name)"
+            return L10n.format("Restored historical calibration%@", name)
         }
-        return "室内模式"
+        return L10n.t("Indoor Mode")
     }
 
     private var heroBackground: some View {

@@ -41,7 +41,7 @@ struct GeoCameraCaptureScreen: View {
                 .toolbarColorScheme(.dark, for: .navigationBar)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("关闭", action: closeCapture)
+                        Button("Close", action: closeCapture)
                     }
                     ToolbarItem(placement: .principal) {
                         captureModePicker
@@ -190,7 +190,7 @@ struct GeoCameraCaptureScreen: View {
     }
 
     private var captureModePicker: some View {
-        Picker("拍摄模式", selection: $cameraService.captureMode) {
+        Picker("Capture Mode", selection: $cameraService.captureMode) {
             ForEach(GeoCameraCaptureMode.allCases) { mode in
                 Text(mode.title).tag(mode)
             }
@@ -206,10 +206,10 @@ struct GeoCameraCaptureScreen: View {
             Image(systemName: "camera.fill")
                 .font(.largeTitle)
                 .foregroundStyle(.white.opacity(0.35))
-            Text("需要相机权限才能拍摄")
+            Text("Camera access is required to capture")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.65))
-            Text("请在系统设置中允许 AltiPin 访问相机与麦克风")
+            Text("Allow AltiPin to access the camera and microphone in Settings.")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.45))
                 .multilineTextAlignment(.center)
@@ -308,7 +308,7 @@ struct GeoCameraCaptureScreen: View {
         let metadata = liveMetadata
         do {
             _ = try mediaStore.insertPhoto(image: image, metadata: metadata)
-            onStatus("照片已保存")
+            onStatus(L10n.t("Photo saved"))
         } catch {
             onStatus(error.localizedDescription)
         }
@@ -324,7 +324,7 @@ struct GeoCameraCaptureScreen: View {
         do {
             _ = try await mediaStore.insertVideo(from: url, metadata: metadata, duration: duration)
             try? FileManager.default.removeItem(at: url)
-            onStatus("视频已保存")
+            onStatus(L10n.t("Video saved"))
         } catch {
             onStatus(error.localizedDescription)
         }

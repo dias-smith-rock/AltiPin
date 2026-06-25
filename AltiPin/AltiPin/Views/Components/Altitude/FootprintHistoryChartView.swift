@@ -150,7 +150,7 @@ struct FootprintHistoryChartView: View {
                         .foregroundStyle(AltitudeTheme.accent)
                 }
             } else {
-                Text("等待第一个脚印…")
+                Text(L10n.t("Waiting for first footprint…"))
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.45))
             }
@@ -162,7 +162,7 @@ struct FootprintHistoryChartView: View {
 
     private var headerRow: some View {
         HStack {
-            Text("已踩脚印 \(footprints.count)/\(windowSize)")
+            Text(L10n.format("Footprints %lld/%lld", footprints.count, windowSize))
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.45))
 
@@ -183,7 +183,7 @@ struct FootprintHistoryChartView: View {
     }
 
     private var emptyState: some View {
-        Text("运动中满足位移阈值后将踩下脚印")
+        Text(L10n.t("Footprints appear after meeting movement threshold"))
             .font(.caption)
             .foregroundStyle(.white.opacity(0.45))
             .frame(height: 200)
@@ -264,10 +264,10 @@ struct FootprintHistoryChartView: View {
             if plottables.count >= 3 {
                 ForEach(plottables) { item in
                     AreaMark(
-                        x: .value("槽位", item.slot),
-                        yStart: .value("基线", areaBaseline),
-                        yEnd: .value("海拔", item.elevation),
-                        series: .value("脚印", "area")
+                        x: .value(L10n.t("Slot"), item.slot),
+                        yStart: .value(L10n.t("Baseline"), areaBaseline),
+                        yEnd: .value(L10n.t("Elevation"), item.elevation),
+                        series: .value(L10n.t("Footprint"), "area")
                     )
                     .foregroundStyle(areaGradient)
                     .interpolationMethod(.linear)
@@ -276,9 +276,9 @@ struct FootprintHistoryChartView: View {
 
             ForEach(plottables) { item in
                 LineMark(
-                    x: .value("槽位", item.slot),
-                    y: .value("海拔", item.elevation),
-                    series: .value("脚印", "line")
+                    x: .value(L10n.t("Slot"), item.slot),
+                    y: .value(L10n.t("Elevation"), item.elevation),
+                    series: .value(L10n.t("Footprint"), "line")
                 )
                 .foregroundStyle(AltitudeTheme.chartLine)
                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
@@ -294,7 +294,7 @@ struct FootprintHistoryChartView: View {
     @ChartContentBuilder
     private var scrubRuleMark: some ChartContent {
         if let selectedSlot {
-            RuleMark(x: .value("选中", selectedSlot))
+            RuleMark(x: .value(L10n.t("Selected"), selectedSlot))
                 .foregroundStyle(AltitudeTheme.accent.opacity(0.75))
                 .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
         }
@@ -303,16 +303,16 @@ struct FootprintHistoryChartView: View {
     @ChartContentBuilder
     private func singlePointMarks(for item: FootprintPlottable) -> some ChartContent {
         RuleMark(
-            x: .value("槽位", item.slot),
-            yStart: .value("基线", areaBaseline),
-            yEnd: .value("海拔", item.elevation)
+            x: .value(L10n.t("Slot"), item.slot),
+            yStart: .value(L10n.t("Baseline"), areaBaseline),
+            yEnd: .value(L10n.t("Elevation"), item.elevation)
         )
         .foregroundStyle(AltitudeTheme.chartLine.opacity(0.35))
         .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
 
         PointMark(
-            x: .value("槽位", item.slot),
-            y: .value("海拔", item.elevation)
+            x: .value(L10n.t("Slot"), item.slot),
+            y: .value(L10n.t("Elevation"), item.elevation)
         )
         .foregroundStyle(AltitudeTheme.chartLine)
         .symbolSize(64)
@@ -332,8 +332,8 @@ struct FootprintHistoryChartView: View {
     @ChartContentBuilder
     private func elevationAnnotatedPoint(for item: FootprintPlottable, symbolSize: CGFloat) -> some ChartContent {
         PointMark(
-            x: .value("槽位", item.slot),
-            y: .value("海拔", item.elevation)
+            x: .value(L10n.t("Slot"), item.slot),
+            y: .value(L10n.t("Elevation"), item.elevation)
         )
         .foregroundStyle(AltitudeTheme.chartLine)
         .symbolSize(symbolSize)
@@ -409,7 +409,7 @@ struct FootprintHistoryChartView: View {
     private func probeText(for footprint: FootprintPoint) -> String {
         let date = Self.axisDateFormatter.string(from: footprint.timestamp)
         let time = Self.axisTimeFormatter.string(from: footprint.timestamp)
-        return "\(date) \(time) · 海拔 \(String(format: "%.0f", footprint.elevation))m"
+        return L10n.format("%@ %@ · Elevation %.0fm", date, time, footprint.elevation)
     }
 
     private func handleScrubSelectionChange(_ newSlot: Int?) {

@@ -19,7 +19,7 @@ struct MemberFilterBar: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 filterChip(
-                    title: allSelected ? "全不选" : "全选",
+                    title: allSelected ? L10n.t("Deselect All") : L10n.t("Select All"),
                     color: .white.opacity(0.6),
                     isSelected: allSelected,
                     action: {
@@ -33,7 +33,7 @@ struct MemberFilterBar: View {
 
                 ForEach(teamSession.members) { member in
                     filterChip(
-                        title: member.isSelf ? "\(member.nickname)(我)" : member.nickname,
+                        title: member.isSelf ? L10n.format("%@ (Me)", member.nickname) : member.nickname,
                         color: member.color,
                         isSelected: teamSession.visibleMemberIDs.contains(member.id),
                         action: {
@@ -59,16 +59,16 @@ struct MemberFilterBar: View {
     private var nicknameEditorSheet: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 20) {
-                Text("修改后队伍内所有人都会看到你的新昵称。")
+                Text("Everyone on the team will see your new nickname.")
                     .font(.subheadline)
                     .foregroundStyle(.white.opacity(0.65))
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("我的昵称")
+                    Text("My Nickname")
                         .font(.caption)
                         .foregroundStyle(AltitudeTheme.accent)
 
-                    TextField("徒步者", text: $draftNickname)
+                    TextField("Hiker", text: $draftNickname)
                         .textFieldStyle(.plain)
                         .padding(12)
                         .background(
@@ -93,19 +93,19 @@ struct MemberFilterBar: View {
             }
             .padding(24)
             .background(Color.black.ignoresSafeArea())
-            .navigationTitle("修改昵称")
+            .navigationTitle("Edit Nickname")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.black, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button("Cancel") {
                         showNicknameEditor = false
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(isSavingNickname ? "保存中…" : "保存") {
+                    Button(isSavingNickname ? "Saving…" : "Save") {
                         Task { await saveNickname() }
                     }
                     .disabled(
@@ -170,7 +170,7 @@ struct MemberFilterBar: View {
     private func saveNickname() async {
         let trimmed = draftNickname.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            nicknameErrorMessage = "昵称不能为空"
+            nicknameErrorMessage = L10n.t("Nickname cannot be empty")
             return
         }
 
@@ -180,7 +180,7 @@ struct MemberFilterBar: View {
             activityNickname = saved
             showNicknameEditor = false
         } else {
-            nicknameErrorMessage = "保存失败，请重试"
+            nicknameErrorMessage = L10n.t("Save failed. Please try again.")
         }
         isSavingNickname = false
     }
@@ -191,11 +191,11 @@ struct MemberFilterBar: View {
         teamSession: {
             let session = TeamSessionStore()
             Task {
-                await session.createRoom(nickname: "徒步者")
+                await session.createRoom(nickname: "Hiker")
             }
             return session
         }(),
-        activityNickname: .constant("徒步者")
+        activityNickname: .constant("Hiker")
     )
     .background(Color.black)
 }

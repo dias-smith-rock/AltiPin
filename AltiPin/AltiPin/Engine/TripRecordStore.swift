@@ -15,11 +15,11 @@ enum TripRecordError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .trackTooShort:
-            return "轨迹太短，未保存"
+            return L10n.t("Track too short, not saved")
         case .gpxWriteFailed:
-            return "轨迹文件写入失败"
+            return L10n.t("Failed to write track file")
         case .saveFailed:
-            return "轨迹保存失败"
+            return L10n.t("Failed to save track")
         }
     }
 }
@@ -101,9 +101,9 @@ final class TripRecordStore {
 
     private static func makeTitle(for startTime: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "M月d日 运动"
-        return formatter.string(from: startTime)
+        formatter.locale = L10n.activeLocale
+        formatter.setLocalizedDateFormatFromTemplate("MMMd")
+        return L10n.format("%@ Activity", formatter.string(from: startTime))
     }
 
     private static func computeStats(

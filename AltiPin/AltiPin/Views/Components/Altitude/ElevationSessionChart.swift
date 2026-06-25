@@ -74,7 +74,7 @@ struct ElevationSessionChart: View {
 
     private var headerRow: some View {
         HStack {
-            Text("已采样 \(recentPoints.count)/\(windowSize) · 1 分钟间隔")
+            Text(L10n.format("Sampled %lld/%lld · 1 min interval", recentPoints.count, windowSize))
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.45))
 
@@ -98,7 +98,7 @@ struct ElevationSessionChart: View {
     }
 
     private var emptyState: some View {
-        Text("暂无海拔会话数据")
+        Text(L10n.t("No elevation session data"))
             .font(.caption)
             .foregroundStyle(.white.opacity(0.45))
             .frame(height: 180)
@@ -137,7 +137,7 @@ struct ElevationSessionChart: View {
             AxisMarks(values: [0, windowSize - 1]) { value in
                 AxisValueLabel(anchor: xAxisLabelAnchor(for: value.as(Int.self))) {
                     if let index = value.as(Int.self) {
-                        Text(index == 0 ? "20次前" : "当前")
+                        Text(index == 0 ? L10n.t("20 samples ago") : L10n.t("Current"))
                             .font(.caption2)
                             .foregroundStyle(.white.opacity(0.45))
                     }
@@ -185,10 +185,10 @@ struct ElevationSessionChart: View {
                 if session.count >= 3 {
                     ForEach(plottables) { item in
                         AreaMark(
-                            x: .value("次序", item.slot),
-                            yStart: .value("基线", areaBaseline),
-                            yEnd: .value("海拔", item.elevation),
-                            series: .value("会话", seriesID)
+                            x: .value(L10n.t("Order"), item.slot),
+                            yStart: .value(L10n.t("Baseline"), areaBaseline),
+                            yEnd: .value(L10n.t("Elevation"), item.elevation),
+                            series: .value(L10n.t("Session"), seriesID)
                         )
                         .foregroundStyle(AltitudeTheme.chartLine.opacity(0.22))
                         .interpolationMethod(interpolation)
@@ -197,9 +197,9 @@ struct ElevationSessionChart: View {
 
                 ForEach(plottables) { item in
                     LineMark(
-                        x: .value("次序", item.slot),
-                        y: .value("海拔", item.elevation),
-                        series: .value("会话", seriesID)
+                        x: .value(L10n.t("Order"), item.slot),
+                        y: .value(L10n.t("Elevation"), item.elevation),
+                        series: .value(L10n.t("Session"), seriesID)
                     )
                     .foregroundStyle(AltitudeTheme.chartLine)
                     .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
@@ -212,16 +212,16 @@ struct ElevationSessionChart: View {
     @ChartContentBuilder
     private func singlePointMarks(for item: ChartPlottablePoint) -> some ChartContent {
         RuleMark(
-            x: .value("次序", item.slot),
-            yStart: .value("基线", areaBaseline),
-            yEnd: .value("海拔", item.elevation)
+            x: .value(L10n.t("Order"), item.slot),
+            yStart: .value(L10n.t("Baseline"), areaBaseline),
+            yEnd: .value(L10n.t("Elevation"), item.elevation)
         )
         .foregroundStyle(AltitudeTheme.chartLine.opacity(0.35))
         .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
 
         PointMark(
-            x: .value("次序", item.slot),
-            y: .value("海拔", item.elevation)
+            x: .value(L10n.t("Order"), item.slot),
+            y: .value(L10n.t("Elevation"), item.elevation)
         )
         .foregroundStyle(AltitudeTheme.chartLine)
         .symbolSize(64)
@@ -234,8 +234,8 @@ struct ElevationSessionChart: View {
             ForEach(recentPoints) { point in
                 if let slot = recentPoints.chartSlotIndex(for: point) {
                     PointMark(
-                        x: .value("次序", slot),
-                        y: .value("海拔", point.elevation)
+                        x: .value(L10n.t("Order"), slot),
+                        y: .value(L10n.t("Elevation"), point.elevation)
                     )
                     .foregroundStyle(AltitudeTheme.chartLine)
                     .symbolSize(36)
@@ -267,11 +267,11 @@ struct ElevationSessionChart: View {
     private var gapAnnotations: some ChartContent {
         ForEach(sessionGaps, id: \.afterSegmentIndex) { gap in
             if let midpoint = gapMidpointSlot(for: gap) {
-                RuleMark(x: .value("断层", midpoint))
+                RuleMark(x: .value(L10n.t("Gap"), midpoint))
                     .foregroundStyle(.white.opacity(0.06))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 5]))
                     .annotation(position: .overlay, alignment: .center) {
-                        Text("系统休眠 \(Self.formatGapDuration(gap.duration))")
+                        Text(L10n.format("System sleep %@", Self.formatGapDuration(gap.duration)))
                             .font(.system(size: 9))
                             .foregroundStyle(.white.opacity(0.32))
                             .multilineTextAlignment(.center)
@@ -298,11 +298,11 @@ struct ElevationSessionChart: View {
         if interval >= 3600 {
             let hours = interval / 3600
             return hours >= 10
-                ? String(format: "%.0f 小时", hours)
-                : String(format: "%.1f 小时", hours)
+                ? L10n.format("%.0f hr", hours)
+                : L10n.format("%.1f hr", hours)
         }
         let minutes = max(1, Int((interval / 60).rounded()))
-        return "\(minutes) 分钟"
+        return L10n.format("%lld min", minutes)
     }
 }
 

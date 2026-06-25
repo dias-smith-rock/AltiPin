@@ -15,13 +15,21 @@ struct AppSettingsView: View {
 
     var body: some View {
         List {
+            Section {
+                NavigationLink {
+                    AppLanguageSettingsView()
+                } label: {
+                    SettingsRowLabel(title: "Language", systemImage: "globe")
+                }
+            }
+
             if AppLinks.showProUpgrade {
                 Section {
                     Button {
                         // TODO: Present Pro paywall when StoreKit is integrated
                     } label: {
                         SettingsRowLabel(
-                            title: "升级 Pro 版本",
+                            title: "Upgrade to Pro",
                             systemImage: "star.fill",
                             iconColor: AltitudeTheme.accent
                         )
@@ -45,15 +53,15 @@ struct AppSettingsView: View {
 
             Section {
                 Button {
-                    safariSheet = SafariLinkSheet(url: AppLinks.privacyPolicyURL, title: "隐私")
+                    safariSheet = SafariLinkSheet(url: AppLinks.privacyPolicyURL, title: L10n.t("Privacy"))
                 } label: {
-                    SettingsRowLabel(title: "隐私", systemImage: "hand.raised")
+                    SettingsRowLabel(title: "Privacy", systemImage: "hand.raised")
                 }
 
                 Button {
-                    safariSheet = SafariLinkSheet(url: AppLinks.termsOfUseURL, title: "使用协议")
+                    safariSheet = SafariLinkSheet(url: AppLinks.termsOfUseURL, title: L10n.t("Terms of Use"))
                 } label: {
-                    SettingsRowLabel(title: "使用协议", systemImage: "doc.text")
+                    SettingsRowLabel(title: "Terms of Use", systemImage: "doc.text")
                 }
             }
 
@@ -82,7 +90,7 @@ struct AppSettingsView: View {
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("完成") {
+                            Button("Done") {
                                 safariSheet = nil
                             }
                         }
@@ -95,8 +103,8 @@ struct AppSettingsView: View {
     private func openFeedback() {
         if MailComposeView.canSendMail {
             showMailComposer = true
-        } else if !FeedbackMailPresenter.open(from: openURL) {
-            // mailto: also unavailable — nothing more to do
+        } else {
+            _ = FeedbackMailPresenter.open(from: openURL)
         }
     }
 
@@ -106,7 +114,7 @@ struct AppSettingsView: View {
 }
 
 private struct SettingsRowLabel: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     var iconColor: Color = AltitudeTheme.accent
     var showsChevron: Bool = true
@@ -134,7 +142,8 @@ private struct SettingsRowLabel: View {
 #Preview {
     NavigationStack {
         AppSettingsView()
-            .navigationTitle("设置")
+            .navigationTitle("Settings")
+            .environmentObject(AppLanguageManager())
     }
     .preferredColorScheme(.dark)
 }

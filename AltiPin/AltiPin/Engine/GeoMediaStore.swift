@@ -16,8 +16,8 @@ enum GeoMediaSortOrder: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .newestFirst: "最新优先"
-        case .oldestFirst: "最早优先"
+        case .newestFirst: L10n.t("Newest First")
+        case .oldestFirst: L10n.t("Oldest First")
         }
     }
 
@@ -169,8 +169,8 @@ enum GeoMediaStoreError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .encodingFailed: "无法编码照片"
-        case .exportFailed: "视频导出失败"
+        case .encodingFailed: L10n.t("Unable to encode photo")
+        case .exportFailed: L10n.t("Video export failed")
         }
     }
 }

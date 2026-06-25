@@ -39,14 +39,14 @@ struct FaceToFaceTeamSheet: View {
             }
             .padding(24)
             .background(Color.black.ignoresSafeArea())
-            .navigationTitle("面对面组队")
+            .navigationTitle("Face to Face Team Up")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.black, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") { dismiss() }
+                    Button("Close") { dismiss() }
                 }
             }
         }
@@ -68,7 +68,7 @@ struct FaceToFaceTeamSheet: View {
 
     private var chooseView: some View {
         VStack(spacing: 20) {
-            Text("和身边的人输入相同 4 位数字，即可进入同一队伍。")
+            Text("Enter the same 4-digit code as nearby teammates to join one team.")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.65))
                 .multilineTextAlignment(.center)
@@ -80,7 +80,7 @@ struct FaceToFaceTeamSheet: View {
                 createdCode = ""
                 Task { await startCreate() }
             } label: {
-                modeButton(title: "创建队伍", subtitle: "生成随机密码")
+                modeButton(title: "Create Team", subtitle: "Generate a random code")
             }
 
             Button {
@@ -88,7 +88,7 @@ struct FaceToFaceTeamSheet: View {
                 joinCode = ""
                 errorMessage = nil
             } label: {
-                modeButton(title: "加入队伍", subtitle: "输入 4 位密码")
+                modeButton(title: "Join Team", subtitle: "Enter a 4-digit code")
             }
         }
     }
@@ -97,7 +97,7 @@ struct FaceToFaceTeamSheet: View {
 
     private var createView: some View {
         VStack(spacing: 20) {
-            Text("让队友输入以下数字")
+            Text("Have teammates enter this code")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.65))
 
@@ -115,12 +115,12 @@ struct FaceToFaceTeamSheet: View {
                     .font(.caption)
                     .foregroundStyle(.red.opacity(0.9))
             } else {
-                Text("等待队友加入…")
+                Text("Waiting for teammates…")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.45))
             }
 
-            Button("完成") {
+            Button("Done") {
                 dismiss()
             }
             .font(.headline)
@@ -136,7 +136,7 @@ struct FaceToFaceTeamSheet: View {
 
     private var joinView: some View {
         VStack(spacing: 20) {
-            Text("输入队伍密码")
+            Text("Enter Team Code")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.65))
 
@@ -167,7 +167,7 @@ struct FaceToFaceTeamSheet: View {
             Button {
                 Task { await startJoin() }
             } label: {
-                Text(isWorking ? "加入中…" : "加入队伍")
+                Text(isWorking ? "Joining…" : "Join Team")
                     .font(.headline)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -187,11 +187,11 @@ struct FaceToFaceTeamSheet: View {
 
     private var nicknameField: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("我的昵称")
+            Text("My Nickname")
                 .font(.caption)
                 .foregroundStyle(AltitudeTheme.accent)
 
-            TextField("徒步者", text: $nickname)
+            TextField("Hiker", text: $nickname)
                 .textFieldStyle(.plain)
                 .padding(12)
                 .background(
@@ -233,7 +233,7 @@ struct FaceToFaceTeamSheet: View {
         await teamSession.createRoom(nickname: name)
         createdCode = teamSession.roomCode ?? ""
         if teamSession.roomCode == nil {
-            errorMessage = teamSession.lastConnectionError ?? "创建队伍失败"
+            errorMessage = teamSession.lastConnectionError ?? L10n.t("Failed to create team")
             TeamRelayLogger.ui("startCreate 失败 error=\(errorMessage ?? "nil")")
         } else {
             TeamRelayLogger.ui("startCreate 成功 room=\(createdCode)")
@@ -243,7 +243,7 @@ struct FaceToFaceTeamSheet: View {
 
     private func startJoin() async {
         guard joinCode.count == 4 else {
-            errorMessage = "请输入 4 位数字"
+            errorMessage = L10n.t("Enter a 4-digit code")
             TeamRelayLogger.ui("startJoin 拒绝：房间码长度=\(joinCode.count)")
             return
         }
@@ -259,13 +259,13 @@ struct FaceToFaceTeamSheet: View {
             TeamRelayLogger.ui("startJoin 成功 room=\(joinCode) 关闭 sheet")
             dismiss()
         } else {
-            errorMessage = teamSession.lastConnectionError ?? "加入队伍失败"
+            errorMessage = teamSession.lastConnectionError ?? L10n.t("Failed to join team")
             TeamRelayLogger.ui("startJoin 失败 error=\(errorMessage ?? "nil")")
         }
     }
 
     private func defaultNickname() -> String {
-        "徒步者\(Int.random(in: 100...999))"
+        L10n.format("Hiker %lld", Int.random(in: 100...999))
     }
 
     private func focusJoinCodeField() {
@@ -279,6 +279,6 @@ struct FaceToFaceTeamSheet: View {
 #Preview {
     FaceToFaceTeamSheet(
         teamSession: TeamSessionStore(),
-        nickname: .constant("徒步者")
+        nickname: .constant("Hiker")
     )
 }

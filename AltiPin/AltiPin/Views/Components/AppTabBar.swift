@@ -26,12 +26,12 @@ enum AppTab: Hashable, CaseIterable {
 
     var accessibilityLabel: String {
         switch self {
-        case .compass: "指南针"
-        case .altitude: "海拔"
-        case .gps: "测速"
-        case .activity: "运动"
-        case .geoCamera: "经纬相机"
-        case .timeline: "记录"
+        case .compass: L10n.t("Compass")
+        case .altitude: L10n.t("Altitude")
+        case .gps: L10n.t("Speed")
+        case .activity: L10n.t("Activity")
+        case .geoCamera: L10n.t("Geo Camera")
+        case .timeline: L10n.t("History")
         }
     }
 }

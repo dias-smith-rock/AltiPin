@@ -978,14 +978,25 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
 
     static func directionName(for degrees: Double) -> String {
         let normalized = (degrees.truncatingRemainder(dividingBy: 360) + 360).truncatingRemainder(dividingBy: 360)
-        let names = ["北", "东北", "东", "东南", "南", "西南", "西", "西北"]
+        let names = [
+            L10n.t("N"), L10n.t("NE"), L10n.t("E"), L10n.t("SE"),
+            L10n.t("S"), L10n.t("SW"), L10n.t("W"), L10n.t("NW"),
+        ]
         let index = Int((normalized + 22.5) / 45) % 8
         return names[index]
     }
 
     static func formatCoordinateDMS(latitude: Double, longitude: Double) -> String {
-        let lon = dmsComponent(value: longitude, positiveLabel: "东经", negativeLabel: "西经")
-        let lat = dmsComponent(value: latitude, positiveLabel: "北纬", negativeLabel: "南纬")
+        let lon = dmsComponent(
+            value: longitude,
+            positiveLabel: L10n.t("East Longitude"),
+            negativeLabel: L10n.t("West Longitude")
+        )
+        let lat = dmsComponent(
+            value: latitude,
+            positiveLabel: L10n.t("North Latitude"),
+            negativeLabel: L10n.t("South Latitude")
+        )
         return "\(lon)  \(lat)"
     }
 

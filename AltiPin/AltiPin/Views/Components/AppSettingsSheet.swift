@@ -17,7 +17,7 @@ extension EnvironmentValues {
 }
 
 struct AppTabBarTitle: View {
-    let text: String
+    let text: LocalizedStringKey
 
     var body: some View {
         Text(text)
@@ -52,14 +52,14 @@ struct AppTabTopBar<Leading: View, Trailing: View>: View {
 }
 
 extension AppTabTopBar where Leading == AppTabBarTitle {
-    init(title: String, @ViewBuilder trailing: @escaping () -> Trailing) {
+    init(title: LocalizedStringKey, @ViewBuilder trailing: @escaping () -> Trailing) {
         self.leading = { AppTabBarTitle(text: title) }
         self.trailing = trailing
     }
 }
 
 extension AppTabTopBar where Leading == AppTabBarTitle, Trailing == AppSettingsButton {
-    init(title: String) {
+    init(title: LocalizedStringKey) {
         self.leading = { AppTabBarTitle(text: title) }
         self.trailing = { AppSettingsButton() }
     }
@@ -83,7 +83,7 @@ struct AppSettingsButton: View {
                 .foregroundStyle(.white.opacity(0.85))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("设置")
+        .accessibilityLabel("Settings")
     }
 }
 
@@ -93,11 +93,11 @@ struct AppSettingsSheet: View {
     var body: some View {
         NavigationStack {
             AppSettingsView()
-                .navigationTitle("设置")
+                .navigationTitle("Settings")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("关闭") {
+                        Button("Close") {
                             onClose()
                         }
                     }

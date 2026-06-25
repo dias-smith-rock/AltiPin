@@ -41,9 +41,9 @@ struct CompassSummaryCard: View {
 
 #Preview {
     HStack(spacing: 10) {
-        CompassSummaryCard(title: "海拔", icon: "mountain.2.fill", value: "75米")
-        CompassSummaryCard(title: "大气压", icon: "gauge.with.dots.needle.67percent", value: "1013 hPa")
-        CompassSummaryCard(title: "风向", icon: "wind", value: "西南风")
+        CompassSummaryCard(title: "Elevation", icon: "mountain.2.fill", value: "75m")
+        CompassSummaryCard(title: "Air Pressure", icon: "gauge.with.dots.needle.67percent", value: "1013 hPa")
+        CompassSummaryCard(title: "Wind Direction", icon: "wind", value: "SW Wind")
     }
     .padding()
     .background(Color.black)

@@ -44,9 +44,9 @@ struct GeoMediaGalleryView: View {
 
             if displayedItems.isEmpty {
                 ContentUnavailableView(
-                    "暂无拍摄",
+                    "No Captures Yet",
                     systemImage: "photo.on.rectangle.angled",
-                    description: Text("拍照或录像后会显示在这里")
+                    description: Text("Photos and videos appear here after capture.")
                 )
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -65,14 +65,14 @@ struct GeoMediaGalleryView: View {
         }
         .background(Color.black)
         .confirmationDialog(
-            "删除所选媒体？",
+            "Delete Selected Media?",
             isPresented: $showDeleteConfirmation,
             titleVisibility: .visible
         ) {
-            Button("删除", role: .destructive) {
+            Button("Delete", role: .destructive) {
                 deleteSelected()
             }
-            Button("取消", role: .cancel) {}
+            Button("Cancel", role: .cancel) {}
         }
         .sheet(isPresented: $showShareSheet) {
             GeoMediaShareSheet(items: shareItems)
@@ -102,7 +102,7 @@ struct GeoMediaGalleryView: View {
     private var galleryToolbar: some View {
         HStack(spacing: 12) {
             Menu {
-                Picker("排序", selection: $sortOrder) {
+                Picker("Sort", selection: $sortOrder) {
                     ForEach(GeoMediaSortOrder.allCases) { order in
                         Text(order.title).tag(order)
                     }
@@ -116,28 +116,28 @@ struct GeoMediaGalleryView: View {
             Spacer()
 
             if isSelecting {
-                Text("已选 \(selectedIDs.count)")
+                Text(L10n.format("%lld selected", selectedIDs.count))
                     .font(.subheadline)
                     .foregroundStyle(AltitudeTheme.accent)
 
-                Button("分享") { shareSelected() }
+                Button("Share") { shareSelected() }
                     .font(.subheadline.weight(.medium))
                     .disabled(selectedIDs.isEmpty)
 
-                Button("保存") {
+                Button("Save") {
                     Task { await saveSelectedToLibrary() }
                 }
                 .font(.subheadline.weight(.medium))
                 .disabled(selectedIDs.isEmpty)
 
-                Button("删除", role: .destructive) {
+                Button("Delete", role: .destructive) {
                     showDeleteConfirmation = true
                 }
                 .font(.subheadline.weight(.medium))
                 .disabled(selectedIDs.isEmpty)
             }
 
-            Button(isSelecting ? "完成" : "选择") {
+            Button(isSelecting ? "Done" : "Select") {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     isSelecting.toggle()
                     if !isSelecting {
@@ -230,7 +230,7 @@ struct GeoMediaGalleryView: View {
             try mediaStore.delete(selectedEntities)
             selectedIDs.removeAll()
             isSelecting = false
-            flashStatus("已删除")
+            flashStatus(L10n.t("Deleted"))
         } catch {
             flashStatus(error.localizedDescription)
         }
@@ -244,7 +244,7 @@ struct GeoMediaGalleryView: View {
     private func saveSelectedToLibrary() async {
         do {
             try await GeoMediaLibrary.saveToPhotoLibrary(entities: selectedEntities, store: mediaStore)
-            flashStatus("已保存到相册")
+            flashStatus(L10n.t("Saved to Photos"))
         } catch {
             flashStatus(error.localizedDescription)
         }
@@ -315,7 +315,7 @@ private struct GeoMediaPreviewScreen: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭", action: onClose)
+                    Button("Close", action: onClose)
                 }
                 if items.count > 1 {
                     ToolbarItem(placement: .topBarTrailing) {

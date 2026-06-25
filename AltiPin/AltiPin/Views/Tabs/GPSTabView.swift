@@ -29,7 +29,7 @@ struct GPSTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AppTabTopBar(title: "测速")
+            AppTabTopBar(title: "Speed")
 
             if store.isSpeedSessionActive {
                 gpsHeader
@@ -73,7 +73,7 @@ struct GPSTabView: View {
                     .frame(width: 7, height: 7)
                     .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: store.isSpeedSessionActive)
 
-                Text("测速中")
+                Text("Speed Test Active")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.red.opacity(0.9))
             }
@@ -146,7 +146,7 @@ struct GPSTabView: View {
                 Image(systemName: store.isSpeedSessionActive ? "stop.fill" : "play.fill")
                     .font(.body.weight(.semibold))
 
-                Text(store.isSpeedSessionActive ? "停止测速" : "开始测速")
+                Text(store.isSpeedSessionActive ? "Stop Speed Test" : "Start Speed Test")
                     .font(.headline.weight(.semibold))
             }
             .frame(maxWidth: .infinity)
@@ -166,7 +166,7 @@ struct GPSTabView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(store.isSpeedSessionActive ? "停止测速" : "开始测速")
+        .accessibilityLabel(store.isSpeedSessionActive ? "Stop Speed Test" : "Start Speed Test")
     }
 
     // MARK: - Session Stats
@@ -174,7 +174,7 @@ struct GPSTabView: View {
     private var sessionStatsPanel: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("本次测速")
+                Text("This Session")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.white.opacity(0.45))
 
@@ -192,11 +192,11 @@ struct GPSTabView: View {
 
             AltitudeMetricGrid(
                 items: [
-                    AltitudeMetricItem(label: "时长", value: statDurationText),
-                    AltitudeMetricItem(label: "平均速度", value: statAverageSpeedText),
-                    AltitudeMetricItem(label: "路程", value: statDistanceText),
-                    AltitudeMetricItem(label: "最大速度", value: statMaxSpeedText),
-                    AltitudeMetricItem(label: "累计爬升", value: statElevationGainText),
+                    AltitudeMetricItem(label: L10n.t("Duration"), value: statDurationText),
+                    AltitudeMetricItem(label: L10n.t("Average Speed"), value: statAverageSpeedText),
+                    AltitudeMetricItem(label: L10n.t("Distance"), value: statDistanceText),
+                    AltitudeMetricItem(label: L10n.t("Max Speed"), value: statMaxSpeedText),
+                    AltitudeMetricItem(label: L10n.t("Elevation Gain"), value: statElevationGainText),
                 ],
                 columns: 3
             )

@@ -62,8 +62,8 @@ enum GeoMediaLibraryError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .permissionDenied: "没有相册写入权限"
-        case .saveFailed: "保存到相册失败"
+        case .permissionDenied: L10n.t("Photo library write permission denied")
+        case .saveFailed: L10n.t("Failed to save to Photos")
         }
     }
 }

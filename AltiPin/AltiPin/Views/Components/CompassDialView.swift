@@ -25,8 +25,8 @@ struct CompassDialView: View {
             levelCrosshair
         }
         .frame(width: dialSize, height: dialSize)
-        .accessibilityLabel("数字罗盘")
-        .accessibilityValue("\(directionName) \(Int(heading.rounded()))度")
+        .accessibilityLabel("Digital Compass")
+        .accessibilityValue(L10n.format("%@ %lld°", directionName, Int(heading.rounded())))
     }
 
     // MARK: - Rotating Dial
@@ -52,8 +52,8 @@ struct CompassDialView: View {
 
             ForEach(cardinalDirections, id: \.label) { item in
                 Text(item.label)
-                    .font(.system(size: 18, weight: item.label == "北" ? .bold : .regular))
-                    .foregroundStyle(item.label == "北" ? .white : .white.opacity(0.75))
+                    .font(.system(size: 18, weight: item.angle == 0 ? .bold : .regular))
+                    .foregroundStyle(item.angle == 0 ? .white : .white.opacity(0.75))
                     .offset(y: -innerRadius + 24)
                     .rotationEffect(.degrees(item.angle))
             }
@@ -111,10 +111,10 @@ struct CompassDialView: View {
 
     private var cardinalDirections: [(label: String, angle: Double)] {
         [
-            ("北", 0),
-            ("东", 90),
-            ("南", 180),
-            ("西", 270),
+            (L10n.t("N"), 0),
+            (L10n.t("E"), 90),
+            (L10n.t("S"), 180),
+            (L10n.t("W"), 270),
         ]
     }
 
@@ -139,7 +139,7 @@ struct CompassDialView: View {
         Color.black.ignoresSafeArea()
         CompassDialView(
             heading: 33,
-            directionName: "东北",
+            directionName: "NE",
             levelOffsetX: 0.2,
             levelOffsetY: -0.1
         )

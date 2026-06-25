@@ -28,8 +28,8 @@ struct HomeTimelineView: View {
     private var monthSections: [(title: String, trips: [TripEntity])] {
         let formatter = DateFormatter()
         formatter.calendar = Calendar.current
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "yyyy年MM月"
+        formatter.locale = L10n.activeLocale
+        formatter.setLocalizedDateFormatFromTemplate("yyyyMMMM")
 
         var grouped: [String: [TripEntity]] = [:]
         var order: [String] = []
@@ -57,9 +57,9 @@ struct HomeTimelineView: View {
                     List {
                         if trips.isEmpty {
                             ContentUnavailableView(
-                                "暂无轨迹",
+                                "No Tracks Yet",
                                 systemImage: "map",
-                                description: Text("开始运动后，轨迹将自动出现在这里")
+                                description: Text("Tracks appear here after you start an activity.")
                             )
                         } else {
                             ForEach(monthSections, id: \.title) { section in
@@ -90,27 +90,27 @@ struct HomeTimelineView: View {
             .animation(.easeInOut(duration: 0.25), value: selectedTripIDs.count)
             .toolbar(.hidden, for: .navigationBar)
             .confirmationDialog(
-                "删除所选轨迹？",
+                "Delete Selected Tracks?",
                 isPresented: $showDeleteConfirmation,
                 titleVisibility: .visible
             ) {
-                Button("删除", role: .destructive) {
+                Button("Delete", role: .destructive) {
                     performDelete()
                 }
-                Button("取消", role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             } message: {
-                Text("将删除 \(selectedTripIDs.count) 条轨迹及其 GPX 文件，此操作不可恢复。")
+                Text(L10n.format("This will permanently delete %lld tracks and their GPX files.", selectedTripIDs.count))
             }
-            .alert("打包合并为回忆", isPresented: $showMergeAlert) {
-                TextField("例如：加拿大旅游", text: $mergeTitle)
-                Button("确认合并") {
+            .alert("Merge as Memory", isPresented: $showMergeAlert) {
+                TextField("e.g. Canada Trip", text: $mergeTitle)
+                Button("Confirm Merge") {
                     performMerge()
                 }
-                Button("取消", role: .cancel) {
+                Button("Cancel", role: .cancel) {
                     mergeTitle = ""
                 }
             } message: {
-                Text("将 \(selectedTripIDs.count) 条轨迹合并为一条回忆，请输入新名称。")
+                Text(L10n.format("Merge %lld tracks into one memory. Enter a new name.", selectedTripIDs.count))
             }
         }
     }
@@ -120,7 +120,7 @@ struct HomeTimelineView: View {
     private var timelineTopBar: some View {
         AppTabTopBar {
             if isEditMode, !trips.isEmpty {
-                Button(isAllSelected ? "取消全选" : "全选") {
+                Button(isAllSelected ? "Deselect All" : "Select All") {
                     withAnimation {
                         if isAllSelected {
                             deselectAll()
@@ -131,11 +131,11 @@ struct HomeTimelineView: View {
                 }
                 .font(.subheadline)
             } else {
-                AppTabBarTitle(text: "轨迹记录")
+                AppTabBarTitle(text: "Track History")
             }
         } trailing: {
             if isEditMode {
-                Button("取消") {
+                Button("Cancel") {
                     withAnimation {
                         isEditMode.toggle()
                         if !isEditMode {
@@ -146,7 +146,7 @@ struct HomeTimelineView: View {
                 .font(.subheadline)
             } else {
                 HStack(spacing: 12) {
-                    Button("选择") {
+                    Button("Select") {
                         withAnimation {
                             isEditMode.toggle()
                             if !isEditMode {
@@ -213,7 +213,7 @@ struct HomeTimelineView: View {
             Button {
                 showDeleteConfirmation = true
             } label: {
-                Text("删除 (\(selectedTripIDs.count))")
+                Text(L10n.format("Delete (%lld)", selectedTripIDs.count))
                     .font(.headline)
                     .foregroundStyle(selectedTripIDs.isEmpty ? Color.white.opacity(0.35) : .white)
                     .frame(maxWidth: .infinity)
@@ -229,7 +229,7 @@ struct HomeTimelineView: View {
                 mergeTitle = suggestedMergeTitle
                 showMergeAlert = true
             } label: {
-                Text("合并 (\(selectedTripIDs.count))")
+                Text(L10n.format("Merge (%lld)", selectedTripIDs.count))
                     .font(.headline)
                     .foregroundStyle(selectedTripIDs.isEmpty ? Color.white.opacity(0.35) : .white)
                     .frame(maxWidth: .infinity)
@@ -267,11 +267,12 @@ struct HomeTimelineView: View {
     private var suggestedMergeTitle: String {
         let selected = trips.filter { selectedTripIDs.contains($0.id) }
         guard let earliest = selected.min(by: { $0.startTime < $1.startTime }) else {
-            return "合并轨迹"
+            return L10n.t("Merged Tracks")
         }
         let formatter = DateFormatter()
+        formatter.locale = L10n.activeLocale
         formatter.dateFormat = "yyyy-MM-dd"
-        return "\(formatter.string(from: earliest.startTime)) 回忆"
+        return L10n.format("%@ Memory", formatter.string(from: earliest.startTime))
     }
 
     private func performMerge() {
@@ -326,7 +327,7 @@ private struct TripRowContent: View {
                     .foregroundStyle(.primary)
 
                 if trip.isMerged {
-                    Text("已合并")
+                    Text("Merged")
                         .font(.caption2)
                         .fontWeight(.medium)
                         .padding(.horizontal, 6)
@@ -359,7 +360,7 @@ private struct TripRowContent: View {
     }
 
     private func formatElevation(_ meters: Double) -> String {
-        String(format: "%.0f m 最高", meters)
+        String(format: "%.0f m %@", meters, L10n.t("Highest"))
     }
 }
 

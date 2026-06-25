@@ -15,10 +15,10 @@ enum SpeedometerMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .driving: "驾车"
-        case .cycling: "骑行"
-        case .running: "跑步"
-        case .walking: "步行"
+        case .driving: L10n.t("Driving")
+        case .cycling: L10n.t("Cycling")
+        case .running: L10n.t("Running")
+        case .walking: L10n.t("Walking")
         }
     }
 

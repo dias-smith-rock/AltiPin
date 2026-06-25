@@ -56,9 +56,9 @@ enum NavigationEnvironmentControlSelection: String, CaseIterable, Identifiable, 
 
     var label: String {
         switch self {
-        case .automatic: return "自动"
-        case .outdoor: return "室外"
-        case .indoor: return "室内"
+        case .automatic: return L10n.t("Automatic")
+        case .outdoor: return L10n.t("Outdoor")
+        case .indoor: return L10n.t("Indoor")
         }
     }
 }
