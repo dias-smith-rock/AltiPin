@@ -19,7 +19,7 @@ struct AppSettingsView: View {
                 NavigationLink {
                     AppLanguageSettingsView()
                 } label: {
-                    SettingsRowLabel(title: "Language", systemImage: "globe")
+                    SettingsRowLabel(title: "Language", systemImage: "globe", showsChevron: false)
                 }
             }
 
