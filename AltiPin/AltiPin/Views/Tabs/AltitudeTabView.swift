@@ -16,6 +16,7 @@ struct AltitudeTabView: View {
     @State private var showRecalibrateSheet = false
     @State private var calibrationFloor = 1
     @State private var calibrationLabel = ""
+    @State private var isRefreshingData = false
 
     var body: some View {
         ScrollView {
@@ -30,6 +31,7 @@ struct AltitudeTabView: View {
                     matchedBuildingLabel: store.matchedBuildingLabel,
                     floorCalibrationSource: store.floorCalibrationSource,
                     isManualNavigationOverride: store.isManualNavigationOverride,
+                    isRefreshDisabled: isRefreshingData,
                     onRefresh: refreshAll,
                     onSettings: { showSettings = true }
                 )
@@ -70,6 +72,12 @@ struct AltitudeTabView: View {
             .padding(.bottom, 24)
         }
         .oledTabBackground()
+        .overlay {
+            if isRefreshingData {
+                dataRefreshOverlay
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: isRefreshingData)
         .onAppear {
             store.refreshNavigationEnvironmentForAltitudeTab()
             Task { @MainActor in
@@ -559,10 +567,44 @@ struct AltitudeTabView: View {
         )
     }
 
+    private var dataRefreshOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                ProgressView()
+                    .tint(AltitudeTheme.accent)
+                    .scaleEffect(1.15)
+
+                Text("正在获取数据…")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 22)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(white: 0.14))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+        }
+        .transition(.opacity)
+    }
+
     private func refreshAll() {
-        guard let location = store.currentLocation else { return }
+        guard !isRefreshingData else { return }
+
+        isRefreshingData = true
         Task {
-            await weatherService.forceRefresh(for: location)
+            let location = await store.forceRefreshForAltitudeTab() ?? store.currentLocation
+            if let location {
+                await weatherService.forceRefresh(for: location)
+            }
+            isRefreshingData = false
         }
     }
 

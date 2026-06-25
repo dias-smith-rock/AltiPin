@@ -101,6 +101,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private var latestMotionActivity: CMMotionActivity?
     private var lastKnownLocation: CLLocation?
     private var recentHistoryCancellable: AnyCancellable?
+    private var forcedLocationRefreshContinuation: CheckedContinuation<CLLocation?, Never>?
+    private var forcedRefreshStartedAt: Date?
 
     override init() {
         super.init()
@@ -323,6 +325,51 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         applySnapshotAssessmentForAltitudeTab()
         queryRecentMotionActivityForAssessment()
         locationManager.requestLocation()
+    }
+
+    /// 刷新按钮：强制请求新定位并等待 GPS 回调（超时后返回末次已知位置）。
+    func forceRefreshForAltitudeTab() async -> CLLocation? {
+        if !isMonitoring {
+            startMonitoring()
+        }
+
+        applySnapshotAssessmentForAltitudeTab()
+        queryRecentMotionActivityForAssessment()
+
+        return await withCheckedContinuation { continuation in
+            if forcedLocationRefreshContinuation != nil {
+                forcedLocationRefreshContinuation?.resume(returning: lastKnownLocation)
+            }
+            forcedLocationRefreshContinuation = continuation
+            forcedRefreshStartedAt = Date()
+            locationManager.requestLocation()
+
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 8_000_000_000)
+                forcedRefreshStartedAt = nil
+                completeForcedLocationRefresh(with: lastKnownLocation ?? currentLocation)
+            }
+        }
+    }
+
+    private func completeForcedLocationRefresh(with location: CLLocation?) {
+        guard let continuation = forcedLocationRefreshContinuation else { return }
+        forcedLocationRefreshContinuation = nil
+        forcedRefreshStartedAt = nil
+        continuation.resume(returning: location)
+    }
+
+    private func shouldCompleteForcedLocationRefresh(for location: CLLocation) -> Bool {
+        guard forcedLocationRefreshContinuation != nil else { return false }
+        guard let startedAt = forcedRefreshStartedAt else { return true }
+        let elapsed = Date().timeIntervalSince(startedAt)
+        if elapsed < 0.4 { return false }
+        if let lastKnownLocation {
+            let sameCoordinate = location.distance(from: lastKnownLocation) < 1
+            let sameTimestamp = abs(location.timestamp.timeIntervalSince(lastKnownLocation.timestamp)) < 1
+            if sameCoordinate && sameTimestamp && elapsed < 2 { return false }
+        }
+        return true
     }
 
     /// 用户确认当前所在楼层（首次进入室内且无 CLFloor / 历史记录时）。
@@ -1024,12 +1071,16 @@ extension OutdoorDashboardStore: CLLocationManagerDelegate {
         guard let location = locations.last else { return }
         Task { @MainActor in
             self.ingestLocation(location)
+            if self.shouldCompleteForcedLocationRefresh(for: location) {
+                self.completeForcedLocationRefresh(with: location)
+            }
         }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in
             NSLog("OutdoorDashboardStore: \(error.localizedDescription)")
+            self.completeForcedLocationRefresh(with: self.lastKnownLocation ?? self.currentLocation)
         }
     }
 }

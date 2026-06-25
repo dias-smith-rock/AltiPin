@@ -16,6 +16,7 @@ struct AltitudeHeroHeader: View {
     var matchedBuildingLabel: String?
     var floorCalibrationSource: FloorCalibrationSource?
     var isManualNavigationOverride: Bool = false
+    var isRefreshDisabled: Bool = false
     let onRefresh: () -> Void
     let onSettings: () -> Void
 
@@ -31,9 +32,10 @@ struct AltitudeHeroHeader: View {
                 Button(action: onRefresh) {
                     Image(systemName: "arrow.clockwise")
                         .font(.body.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(.white.opacity(isRefreshDisabled ? 0.35 : 0.9))
                         .frame(width: 36, height: 36)
                 }
+                .disabled(isRefreshDisabled)
 
                 Spacer()
 
