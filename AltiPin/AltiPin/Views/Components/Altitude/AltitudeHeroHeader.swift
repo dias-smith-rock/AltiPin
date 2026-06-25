@@ -18,7 +18,6 @@ struct AltitudeHeroHeader: View {
     var isManualNavigationOverride: Bool = false
     var isRefreshDisabled: Bool = false
     let onRefresh: () -> Void
-    let onSettings: () -> Void
 
     private var isIndoorMode: Bool {
         navigationEnvironment == .indoor
@@ -31,20 +30,13 @@ struct AltitudeHeroHeader: View {
             HStack {
                 Button(action: onRefresh) {
                     Image(systemName: "arrow.clockwise")
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.white.opacity(isRefreshDisabled ? 0.35 : 0.9))
-                        .frame(width: 36, height: 36)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.white.opacity(isRefreshDisabled ? 0.35 : 0.85))
                 }
+                .buttonStyle(.plain)
                 .disabled(isRefreshDisabled)
 
                 Spacer()
-
-                Button(action: onSettings) {
-                    Image(systemName: "gearshape")
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.white.opacity(0.9))
-                        .frame(width: 36, height: 36)
-                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -162,8 +154,7 @@ struct AltitudeHeroHeader: View {
     AltitudeHeroHeader(
         elevationMeters: 83,
         verticalAccuracy: 9.88,
-        onRefresh: {},
-        onSettings: {}
+        onRefresh: {}
     )
     .background(Color.black)
 }
@@ -176,8 +167,7 @@ struct AltitudeHeroHeader: View {
         estimatedIndoorFloor: 3,
         isIndoorFloorCalibrated: true,
         floorCalibrationSource: .manual,
-        onRefresh: {},
-        onSettings: {}
+        onRefresh: {}
     )
     .background(Color.black)
 }
@@ -188,8 +178,7 @@ struct AltitudeHeroHeader: View {
         verticalAccuracy: -1,
         navigationEnvironment: .indoor,
         needsFloorCalibration: true,
-        onRefresh: {},
-        onSettings: {}
+        onRefresh: {}
     )
     .background(Color.black)
 }

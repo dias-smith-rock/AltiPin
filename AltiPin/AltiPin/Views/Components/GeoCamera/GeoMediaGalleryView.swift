@@ -109,7 +109,7 @@ struct GeoMediaGalleryView: View {
                 }
             } label: {
                 Label(sortOrder.title, systemImage: "arrow.up.arrow.down")
-                    .font(.caption.weight(.medium))
+                    .font(.subheadline.weight(.medium))
                     .foregroundStyle(.white.opacity(0.85))
             }
 
@@ -117,23 +117,23 @@ struct GeoMediaGalleryView: View {
 
             if isSelecting {
                 Text("已选 \(selectedIDs.count)")
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(AltitudeTheme.accent)
 
                 Button("分享") { shareSelected() }
-                    .font(.caption.weight(.medium))
+                    .font(.subheadline.weight(.medium))
                     .disabled(selectedIDs.isEmpty)
 
                 Button("保存") {
                     Task { await saveSelectedToLibrary() }
                 }
-                .font(.caption.weight(.medium))
+                .font(.subheadline.weight(.medium))
                 .disabled(selectedIDs.isEmpty)
 
                 Button("删除", role: .destructive) {
                     showDeleteConfirmation = true
                 }
-                .font(.caption.weight(.medium))
+                .font(.subheadline.weight(.medium))
                 .disabled(selectedIDs.isEmpty)
             }
 
@@ -145,7 +145,7 @@ struct GeoMediaGalleryView: View {
                     }
                 }
             }
-            .font(.caption.weight(.semibold))
+            .font(.subheadline.weight(.semibold))
             .foregroundStyle(AltitudeTheme.accent)
         }
         .padding(.horizontal, 16)

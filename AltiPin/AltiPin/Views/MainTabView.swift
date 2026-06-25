@@ -12,6 +12,7 @@ struct MainTabView: View {
     @StateObject private var weatherService = CompassWeatherService()
     @State private var selectedTab: AppTab = .compass
     @State private var isTabBarHidden = false
+    @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -38,6 +39,12 @@ struct MainTabView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .environment(\.presentAppSettings) {
+            showSettings = true
+        }
+        .sheet(isPresented: $showSettings) {
+            AppSettingsSheet(onClose: { showSettings = false })
+        }
         .onPreferenceChange(TabBarHiddenPreferenceKey.self) { isTabBarHidden = $0 }
         .onAppear {
             store.configure(modelContext: modelContext)

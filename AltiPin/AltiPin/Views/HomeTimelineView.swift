@@ -50,66 +50,45 @@ struct HomeTimelineView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                List {
-                    if trips.isEmpty {
-                        ContentUnavailableView(
-                            "暂无轨迹",
-                            systemImage: "map",
-                            description: Text("开始运动后，轨迹将自动出现在这里")
-                        )
-                    } else {
-                        ForEach(monthSections, id: \.title) { section in
-                            Section(header: Text(section.title)) {
-                                ForEach(section.trips) { trip in
-                                    tripRow(trip)
+            VStack(spacing: 0) {
+                timelineTopBar
+
+                ZStack {
+                    List {
+                        if trips.isEmpty {
+                            ContentUnavailableView(
+                                "暂无轨迹",
+                                systemImage: "map",
+                                description: Text("开始运动后，轨迹将自动出现在这里")
+                            )
+                        } else {
+                            ForEach(monthSections, id: \.title) { section in
+                                Section(header: Text(section.title)) {
+                                    ForEach(section.trips) { trip in
+                                        tripRow(trip)
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                .listStyle(.insetGrouped)
-                .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
+                    .listStyle(.insetGrouped)
+                    .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
 
-                if isEditMode {
-                    VStack {
-                        Spacer()
-                        editModeBottomBar
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 28)
+                    if isEditMode {
+                        VStack {
+                            Spacer()
+                            editModeBottomBar
+                                .padding(.horizontal, 24)
+                                .padding(.bottom, 28)
+                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .animation(.easeInOut(duration: 0.25), value: isEditMode)
             .animation(.easeInOut(duration: 0.25), value: selectedTripIDs.count)
-            .navigationTitle("轨迹记录")
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    if isEditMode, !trips.isEmpty {
-                        Button(isAllSelected ? "取消全选" : "全选") {
-                            withAnimation {
-                                if isAllSelected {
-                                    deselectAll()
-                                } else {
-                                    selectAll()
-                                }
-                            }
-                        }
-                    }
-                }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(isEditMode ? "取消" : "选择") {
-                        withAnimation {
-                            isEditMode.toggle()
-                            if !isEditMode {
-                                selectedTripIDs.removeAll()
-                            }
-                        }
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .confirmationDialog(
                 "删除所选轨迹？",
                 isPresented: $showDeleteConfirmation,
@@ -132,6 +111,53 @@ struct HomeTimelineView: View {
                 }
             } message: {
                 Text("将 \(selectedTripIDs.count) 条轨迹合并为一条回忆，请输入新名称。")
+            }
+        }
+    }
+
+    // MARK: - Top Bar
+
+    private var timelineTopBar: some View {
+        AppTabTopBar {
+            if isEditMode, !trips.isEmpty {
+                Button(isAllSelected ? "取消全选" : "全选") {
+                    withAnimation {
+                        if isAllSelected {
+                            deselectAll()
+                        } else {
+                            selectAll()
+                        }
+                    }
+                }
+                .font(.subheadline)
+            } else {
+                AppTabBarTitle(text: "轨迹记录")
+            }
+        } trailing: {
+            if isEditMode {
+                Button("取消") {
+                    withAnimation {
+                        isEditMode.toggle()
+                        if !isEditMode {
+                            selectedTripIDs.removeAll()
+                        }
+                    }
+                }
+                .font(.subheadline)
+            } else {
+                HStack(spacing: 12) {
+                    Button("选择") {
+                        withAnimation {
+                            isEditMode.toggle()
+                            if !isEditMode {
+                                selectedTripIDs.removeAll()
+                            }
+                        }
+                    }
+                    .font(.subheadline)
+
+                    AppSettingsButton()
+                }
             }
         }
     }

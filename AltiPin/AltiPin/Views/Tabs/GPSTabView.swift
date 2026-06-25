@@ -29,31 +29,34 @@ struct GPSTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            gpsHeader
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 10)
+            AppTabTopBar(title: "测速")
+
+            if store.isSpeedSessionActive {
+                gpsHeader
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 10)
+            }
 
             modePicker
-                .padding(.horizontal, 16)
-                .padding(.bottom, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
 
-            SpeedometerGaugeView(
-                currentSpeed: gaugeSpeed,
-                maxSpeed: selectedMode.maxSpeed,
-                majorTickInterval: selectedMode.majorTickInterval
-            )
-            .padding(.horizontal, 4)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .layoutPriority(2)
-            .animation(.easeOut(duration: 0.25), value: selectedModeRawValue)
+                SpeedometerGaugeView(
+                    currentSpeed: gaugeSpeed,
+                    maxSpeed: selectedMode.maxSpeed,
+                    majorTickInterval: selectedMode.majorTickInterval
+                )
+                .padding(.horizontal, 4)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .layoutPriority(2)
+                .animation(.easeOut(duration: 0.25), value: selectedModeRawValue)
 
-            sessionControlButton
-                .padding(.horizontal, 16)
-                .padding(.top, 4)
-                .padding(.bottom, 10)
+                sessionControlButton
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                    .padding(.bottom, 10)
 
-            sessionStatsPanel
+                sessionStatsPanel
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
         }
@@ -64,35 +67,24 @@ struct GPSTabView: View {
 
     private var gpsHeader: some View {
         HStack(spacing: 10) {
-            Text("测速")
-                .font(.headline)
-                .foregroundStyle(.white.opacity(0.9))
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 7, height: 7)
+                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: store.isSpeedSessionActive)
 
-            if store.isSpeedSessionActive {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 7, height: 7)
-                        .opacity(store.isSpeedSessionActive ? 1 : 0)
-                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: store.isSpeedSessionActive)
-
-                    Text("测速中")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.red.opacity(0.9))
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.red.opacity(0.12))
-                )
+                Text("测速中")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.red.opacity(0.9))
             }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.red.opacity(0.12))
+            )
 
             Spacer()
-
-            Text(selectedMode.title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(AltitudeTheme.accent)
         }
     }
 

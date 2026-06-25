@@ -11,7 +11,6 @@ struct AltitudeTabView: View {
     @ObservedObject var weatherService: CompassWeatherService
     @ObservedObject private var footprintEngine = FootprintTrackingEngine.shared
 
-    @State private var showSettings = false
     @State private var showFloorCalibration = false
     @State private var showRecalibrateSheet = false
     @State private var calibrationFloor = 1
@@ -19,59 +18,69 @@ struct AltitudeTabView: View {
     @State private var isRefreshingData = false
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 0) {
-                AltitudeHeroHeader(
-                    elevationMeters: store.elevationMeters,
-                    verticalAccuracy: store.verticalAccuracy,
-                    navigationEnvironment: store.navigationEnvironment,
-                    estimatedIndoorFloor: store.estimatedIndoorFloor,
-                    isIndoorFloorCalibrated: store.isIndoorFloorCalibrated,
-                    needsFloorCalibration: store.needsFloorCalibration,
-                    matchedBuildingLabel: store.matchedBuildingLabel,
-                    floorCalibrationSource: store.floorCalibrationSource,
-                    isManualNavigationOverride: store.isManualNavigationOverride,
-                    isRefreshDisabled: isRefreshingData,
-                    onRefresh: refreshAll,
-                    onSettings: { showSettings = true }
-                )
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 0) {
+                    AltitudeHeroHeader(
+                        elevationMeters: store.elevationMeters,
+                        verticalAccuracy: store.verticalAccuracy,
+                        navigationEnvironment: store.navigationEnvironment,
+                        estimatedIndoorFloor: store.estimatedIndoorFloor,
+                        isIndoorFloorCalibrated: store.isIndoorFloorCalibrated,
+                        needsFloorCalibration: store.needsFloorCalibration,
+                        matchedBuildingLabel: store.matchedBuildingLabel,
+                        floorCalibrationSource: store.floorCalibrationSource,
+                        isManualNavigationOverride: store.isManualNavigationOverride,
+                        isRefreshDisabled: isRefreshingData,
+                        onRefresh: refreshAll
+                    )
 
-                environmentModeSection
-                sectionDivider
-
-                FootprintHistoryChartView(footprints: footprintEngine.recentFootprints)
-
-                sectionDivider
-
-                if store.navigationEnvironment == .indoor {
-                    indoorFloorSection
+                    environmentModeSection
                     sectionDivider
-                    #if DEBUG
-                    environmentDebugSection
+
+                    FootprintHistoryChartView(footprints: footprintEngine.recentFootprints)
+
                     sectionDivider
-                    #endif
+
+                    if store.navigationEnvironment == .indoor {
+                        indoorFloorSection
+                        sectionDivider
+                        #if DEBUG
+                        environmentDebugSection
+                        sectionDivider
+                        #endif
+                    }
+
+                    coordinatesSection
+                    sectionDivider
+
+                    airDataSection
+                    sectionDivider
+
+                    magneticFieldSection
+                    sectionDivider
+
+                    pressureSection
+                    sectionDivider
+
+                    boilingPointSection
+                    sectionDivider
+
+                    weatherSection
                 }
-
-                coordinatesSection
-                sectionDivider
-
-                airDataSection
-                sectionDivider
-
-                magneticFieldSection
-                sectionDivider
-
-                pressureSection
-                sectionDivider
-
-                boilingPointSection
-                sectionDivider
-
-                weatherSection
+                .padding(.bottom, 24)
             }
-            .padding(.bottom, 24)
+            .oledTabBackground()
+            .ignoresSafeArea(edges: .top)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    AppSettingsButton()
+                }
+            }
         }
-        .oledTabBackground()
         .overlay {
             if isRefreshingData {
                 dataRefreshOverlay
@@ -103,25 +112,6 @@ struct AltitudeTabView: View {
         }
         .sheet(isPresented: $showRecalibrateSheet) {
             floorCalibrationSheet(isRecalibrate: true)
-        }
-        .sheet(isPresented: $showSettings) {
-            NavigationStack {
-                ContentUnavailableView(
-                    "设置",
-                    systemImage: "gearshape",
-                    description: Text("设置功能即将推出")
-                )
-                .navigationTitle("设置")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("关闭") {
-                            showSettings = false
-                        }
-                    }
-                }
-            }
-            .preferredColorScheme(.dark)
         }
     }
 

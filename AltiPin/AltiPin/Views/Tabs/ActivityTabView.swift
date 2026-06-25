@@ -21,9 +21,8 @@ struct ActivityTabView: View {
     @State private var statusMessage: String?
 
     var body: some View {
-        NavigationStack {
-            ZStack(alignment: .top) {
-                GroupTrackMapView(
+        ZStack(alignment: .top) {
+            GroupTrackMapView(
                     members: teamSession.isInRoom ? teamSession.members : [],
                     visibleMemberIDs: teamSession.visibleMemberIDs,
                     selfFallbackPoints: store.recentHistoryPoints,
@@ -38,40 +37,8 @@ struct ActivityTabView: View {
                 )
 
                 if !isMapFullscreen {
-                    VStack(spacing: 0) {
-                        if teamSession.isInRoom {
-                            MemberFilterBar(
-                                teamSession: teamSession,
-                                activityNickname: $activityNickname
-                            )
-                        }
-
-                        Spacer()
-
-                        VStack(spacing: 10) {
-                            if !teamSession.isInRoom {
-                                metricsOverlay
-                            }
-                            if teamSession.canControlActivitySession {
-                                sessionControlBar
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 12)
-                    }
-                    .transition(.opacity)
-                }
-            }
-            .background(Color.black)
-            .animation(.easeInOut(duration: 0.22), value: isMapFullscreen)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
-            .toolbarBackground(.black, for: .navigationBar)
-            .toolbarBackground(isMapFullscreen ? .hidden : .visible, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
-            .toolbar {
-                if !isMapFullscreen {
-                    ActivityTeamHeader(
+                VStack(spacing: 0) {
+                    ActivityTopBar(
                         teamSession: teamSession,
                         onFaceToFaceTapped: {
                             TeamRelayLogger.ui("点击「面对面组队」")
@@ -84,9 +51,33 @@ struct ActivityTabView: View {
                             showLeaveConfirmation = true
                         }
                     )
+
+                    if teamSession.isInRoom {
+                        MemberFilterBar(
+                            teamSession: teamSession,
+                            activityNickname: $activityNickname
+                        )
+                    }
+
+                    Spacer()
+
+                    VStack(spacing: 10) {
+                        if !teamSession.isInRoom {
+                            metricsOverlay
+                        }
+                        if teamSession.canControlActivitySession {
+                            sessionControlBar
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
                 }
+                .transition(.opacity)
             }
-            .confirmationDialog(
+        }
+        .background(Color.black)
+        .animation(.easeInOut(duration: 0.22), value: isMapFullscreen)
+        .confirmationDialog(
                 teamSession.leaveConfirmationTitle,
                 isPresented: $showLeaveConfirmation,
                 titleVisibility: .visible
@@ -184,7 +175,6 @@ struct ActivityTabView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-        }
     }
 
     // MARK: - Sync

@@ -20,15 +20,15 @@ struct CompassTabView: View {
     @ObservedObject var weatherService: CompassWeatherService
 
     @State private var heading: Double = 0
-    @State private var showSettings = false
     @State private var majorTickHaptic = MajorTickHaptic()
 
     var body: some View {
         VStack(spacing: 0) {
-            compassHeader
+            AppTabTopBar(title: "指南针")
+
+            compassLocationRow
                 .padding(.horizontal, 20)
-                .padding(.top, 8)
-                .padding(.bottom, 12)
+                .padding(.bottom, 8)
 
             headingSection
                 .padding(.bottom, 8)
@@ -67,56 +67,30 @@ struct CompassTabView: View {
         .onChange(of: store.longitude) { _, _ in
             refreshWeatherIfNeeded()
         }
-        .sheet(isPresented: $showSettings) {
-            NavigationStack {
-                ContentUnavailableView(
-                    "设置",
-                    systemImage: "gearshape",
-                    description: Text("设置功能即将推出")
-                )
-                .navigationTitle("设置")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("关闭") {
-                            showSettings = false
-                        }
-                    }
-                }
-            }
-            .preferredColorScheme(.dark)
-        }
     }
 
     // MARK: - Header
 
-    private var compassHeader: some View {
-        HStack {
-            HStack(spacing: 6) {
-                Image(systemName: weatherService.conditionSymbol)
-                    .font(.subheadline)
-                    .symbolRenderingMode(.multicolor)
-                    .contentTransition(.symbolEffect(.replace))
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(weatherService.localityName)
-                        .font(.subheadline)
-                        .foregroundStyle(.white.opacity(0.85))
-                    Text(temperatureText)
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.65))
-                }
-            }
+    private var compassLocationRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: weatherService.conditionSymbol)
+                .font(.subheadline)
+                .symbolRenderingMode(.multicolor)
+                .contentTransition(.symbolEffect(.replace))
 
-            Spacer()
+            Text(weatherService.localityName)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.85))
+                .lineLimit(1)
 
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "gearshape")
-                    .font(.body)
-                    .foregroundStyle(.white.opacity(0.85))
-            }
+            Text(temperatureText)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.65))
+                .lineLimit(1)
+
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var temperatureText: String {

@@ -14,30 +14,27 @@ struct GeoCameraTabView: View {
     @State private var statusMessage: String?
 
     var body: some View {
-        NavigationStack {
+        VStack(spacing: 0) {
+            AppTabTopBar(title: "经纬相机")
+
             GeoMediaGalleryView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(Color.black.ignoresSafeArea())
-                .navigationTitle("经纬相机")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbarBackground(.black, for: .navigationBar)
-                .toolbarBackground(.visible, for: .navigationBar)
-                .toolbarColorScheme(.dark, for: .navigationBar)
-                .overlay(alignment: .bottomTrailing) {
-                    captureFAB
-                }
-                .overlay(alignment: .bottom) {
-                    if let statusMessage {
-                        Text(statusMessage)
-                            .font(.caption)
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Capsule().fill(Color.white.opacity(0.15)))
-                            .padding(.bottom, 88)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                }
+        }
+        .background(Color.black.ignoresSafeArea())
+        .overlay(alignment: .bottomTrailing) {
+            captureFAB
+        }
+        .overlay(alignment: .bottom) {
+            if let statusMessage {
+                Text(statusMessage)
+                    .font(.caption)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(Capsule().fill(Color.white.opacity(0.15)))
+                    .padding(.bottom, 88)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         .preferredColorScheme(.dark)
         .fullScreenCover(isPresented: $showCapture) {
