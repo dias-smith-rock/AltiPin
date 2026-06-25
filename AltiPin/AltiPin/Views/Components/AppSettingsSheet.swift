@@ -92,20 +92,16 @@ struct AppSettingsSheet: View {
 
     var body: some View {
         NavigationStack {
-            ContentUnavailableView(
-                "设置",
-                systemImage: "gearshape",
-                description: Text("设置功能即将推出")
-            )
-            .navigationTitle("设置")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") {
-                        onClose()
+            AppSettingsView()
+                .navigationTitle("设置")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("关闭") {
+                            onClose()
+                        }
                     }
                 }
-            }
         }
         .preferredColorScheme(.dark)
     }
