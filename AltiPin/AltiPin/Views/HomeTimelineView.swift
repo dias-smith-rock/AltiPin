@@ -14,7 +14,16 @@ struct HomeTimelineView: View {
     @State private var isEditMode = false
     @State private var selectedTripIDs: Set<UUID> = []
     @State private var showMergeAlert = false
+    @State private var showDeleteConfirmation = false
     @State private var mergeTitle = ""
+
+    private var tripStore: TripRecordStore {
+        TripRecordStore(modelContext: modelContext)
+    }
+
+    private var isAllSelected: Bool {
+        !trips.isEmpty && selectedTripIDs.count == trips.count
+    }
 
     private var monthSections: [(title: String, trips: [TripEntity])] {
         let formatter = DateFormatter()
@@ -62,10 +71,10 @@ struct HomeTimelineView: View {
                 .listStyle(.insetGrouped)
                 .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
 
-                if isEditMode, !selectedTripIDs.isEmpty {
+                if isEditMode {
                     VStack {
                         Spacer()
-                        mergeFloatingButton
+                        editModeBottomBar
                             .padding(.horizontal, 24)
                             .padding(.bottom, 28)
                     }
@@ -76,6 +85,20 @@ struct HomeTimelineView: View {
             .animation(.easeInOut(duration: 0.25), value: selectedTripIDs.count)
             .navigationTitle("轨迹记录")
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if isEditMode, !trips.isEmpty {
+                        Button(isAllSelected ? "取消全选" : "全选") {
+                            withAnimation {
+                                if isAllSelected {
+                                    deselectAll()
+                                } else {
+                                    selectAll()
+                                }
+                            }
+                        }
+                    }
+                }
+
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(isEditMode ? "取消" : "选择") {
                         withAnimation {
@@ -86,6 +109,18 @@ struct HomeTimelineView: View {
                         }
                     }
                 }
+            }
+            .confirmationDialog(
+                "删除所选轨迹？",
+                isPresented: $showDeleteConfirmation,
+                titleVisibility: .visible
+            ) {
+                Button("删除", role: .destructive) {
+                    performDelete()
+                }
+                Button("取消", role: .cancel) {}
+            } message: {
+                Text("将删除 \(selectedTripIDs.count) 条轨迹及其 GPX 文件，此操作不可恢复。")
             }
             .alert("打包合并为回忆", isPresented: $showMergeAlert) {
                 TextField("例如：加拿大旅游", text: $mergeTitle)
@@ -145,24 +180,53 @@ struct HomeTimelineView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Merge Button
+    // MARK: - Edit Mode Bottom Bar
 
-    private var mergeFloatingButton: some View {
-        Button {
-            mergeTitle = suggestedMergeTitle
-            showMergeAlert = true
-        } label: {
-            Text("打包合并为回忆 (\(selectedTripIDs.count))")
-                .font(.headline)
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(Color.accentColor, in: Capsule())
-                .shadow(color: .black.opacity(0.18), radius: 12, y: 6)
+    private var editModeBottomBar: some View {
+        HStack(spacing: 12) {
+            Button {
+                showDeleteConfirmation = true
+            } label: {
+                Text("删除 (\(selectedTripIDs.count))")
+                    .font(.headline)
+                    .foregroundStyle(selectedTripIDs.isEmpty ? Color.white.opacity(0.35) : .white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        selectedTripIDs.isEmpty ? Color.white.opacity(0.08) : Color.red.opacity(0.85),
+                        in: Capsule()
+                    )
+            }
+            .disabled(selectedTripIDs.isEmpty)
+
+            Button {
+                mergeTitle = suggestedMergeTitle
+                showMergeAlert = true
+            } label: {
+                Text("合并 (\(selectedTripIDs.count))")
+                    .font(.headline)
+                    .foregroundStyle(selectedTripIDs.isEmpty ? Color.white.opacity(0.35) : .white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        selectedTripIDs.isEmpty ? Color.white.opacity(0.08) : Color.accentColor,
+                        in: Capsule()
+                    )
+                    .shadow(color: selectedTripIDs.isEmpty ? .clear : .black.opacity(0.18), radius: 12, y: 6)
+            }
+            .disabled(selectedTripIDs.isEmpty)
         }
     }
 
     // MARK: - Actions
+
+    private func selectAll() {
+        selectedTripIDs = Set(trips.map(\.id))
+    }
+
+    private func deselectAll() {
+        selectedTripIDs.removeAll()
+    }
 
     private func toggleSelection(for id: UUID) {
         withAnimation(.easeInOut(duration: 0.15)) {
@@ -197,6 +261,28 @@ struct HomeTimelineView: View {
             isEditMode = false
             selectedTripIDs.removeAll()
             mergeTitle = ""
+        }
+    }
+
+    private func performDelete() {
+        let ids = selectedTripIDs
+        guard !ids.isEmpty else { return }
+
+        let toDelete = trips.filter { ids.contains($0.id) }
+        let willBeEmpty = toDelete.count >= trips.count
+
+        do {
+            try tripStore.delete(toDelete)
+        } catch {
+            NSLog("HomeTimelineView: delete failed — \(error.localizedDescription)")
+            return
+        }
+
+        withAnimation {
+            selectedTripIDs.removeAll()
+            if willBeEmpty {
+                isEditMode = false
+            }
         }
     }
 }

@@ -85,6 +85,20 @@ final class TripRecordStore {
         return allPoints.sorted { $0.timestamp < $1.timestamp }
     }
 
+    func delete(_ trips: [TripEntity]) throws {
+        guard !trips.isEmpty else { return }
+
+        for trip in trips {
+            for fileName in trip.subGpxFileNames {
+                let url = GPXTrackReader.fileURL(for: fileName)
+                try? FileManager.default.removeItem(at: url)
+            }
+            modelContext.delete(trip)
+        }
+
+        try modelContext.save()
+    }
+
     private static func makeTitle(for startTime: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "zh_CN")
