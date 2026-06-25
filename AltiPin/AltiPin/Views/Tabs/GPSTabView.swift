@@ -29,12 +29,13 @@ struct GPSTabView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AppTabTopBar(title: "Speed")
-
-            if store.isSpeedSessionActive {
-                gpsHeader
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 10)
+            AppTabTopBar(title: "Speed") {
+                HStack(spacing: 8) {
+                    if store.isSpeedSessionActive {
+                        speedTestActiveBadge
+                    }
+                    AppSettingsButton()
+                }
             }
 
             modePicker
@@ -63,29 +64,26 @@ struct GPSTabView: View {
         .oledTabBackground()
     }
 
-    // MARK: - Header
+    // MARK: - Active Badge
 
-    private var gpsHeader: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 7, height: 7)
-                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: store.isSpeedSessionActive)
+    private var speedTestActiveBadge: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(Color.red)
+                .frame(width: 7, height: 7)
+                .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: store.isSpeedSessionActive)
 
-                Text("Speed Test Active")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.red.opacity(0.9))
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.red.opacity(0.12))
-            )
-
-            Spacer()
+            Text("Speed Test Active")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.red.opacity(0.9))
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(
+            Capsule(style: .continuous)
+                .fill(Color.red.opacity(0.12))
+        )
+        .transition(.opacity.combined(with: .scale(scale: 0.92)))
     }
 
     // MARK: - Mode Picker
