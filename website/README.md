@@ -122,4 +122,4 @@ dig compass.sryze.cc CNAME +short
 ## 相关链接
 
 - GitHub 仓库：<https://github.com/dias-smith-rock/AltiPin>
-- 联系邮箱：support@altipin.app
+- 联系邮箱：music.player.250617@gmail.com

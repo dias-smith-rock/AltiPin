@@ -6,15 +6,15 @@
 import Foundation
 
 enum AppLinks {
-    static let feedbackEmail = "support@altipin.app"
+    static let feedbackEmail = "music.player.250617@gmail.com"
     static let feedbackSubject = "AltiPin Feedback"
 
-    static let privacyPolicyURL = URL(string: "https://compass.sryze.cc/privacy")!
-    static let termsOfUseURL = URL(string: "https://compass.sryze.cc/terms")!
+    static let privacyPolicyURL = URL(string: "http://www.compass.sryze.cc/privacy/?lang=en")!
+    static let termsOfUseURL = URL(string: "http://www.compass.sryze.cc/terms/?lang=en")!
     static let websiteURL = URL(string: "https://compass.sryze.cc")!
 
-    /// 上线前替换为真实 App Store ID
-    static let appStoreReviewURL = URL(string: "https://apps.apple.com/app/id0000000000?action=write-review")!
+    static let appStoreURL = URL(string: "https://apps.apple.com/app/id6780429432")!
+    static let appStoreReviewURL = URL(string: "https://apps.apple.com/app/id6780429432?action=write-review")!
 
     /// 后续接入 StoreKit Paywall 时改为 true
     static let showProUpgrade = false

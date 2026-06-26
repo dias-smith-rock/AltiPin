@@ -15,7 +15,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · Local-first · No account",
     "hero.title": "Outdoor track & altitude recorder",
     "hero.subtitle": "Compass, live elevation, speedometer, activity tracking, and geo-stamped camera — your pocket outdoor dashboard.",
-    "hero.cta_appstore": "Coming soon on App Store",
+    "hero.cta_appstore": "Download on the App Store",
     "hero.cta_features": "Explore features",
     "features.label": "Features",
     "features.title": "Six core modules",
@@ -74,7 +74,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. Policy changes",
     "privacy.s6.p": "We may update this policy from time to time. Material changes will be posted on this page with an updated date.",
     "privacy.s7.title": "7. Contact us",
-    "privacy.s7.p": "For privacy questions, email <a href=\"mailto:support@altipin.app\">support@altipin.app</a>.",
+    "privacy.s7.p": "For privacy questions, email <a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>.",
     "terms.title": "Terms of Use",
     "terms.meta": "Effective: June 26, 2026 · Last updated: June 26, 2026",
     "terms.intro": "Welcome to AltiPin. By downloading, installing, or using the App, you agree to these terms. If you do not agree, do not use the App.",
@@ -99,7 +99,7 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. Governing law",
     "terms.s7.p": "These terms are governed by the laws of your jurisdiction. If any provision is invalid, the remainder stays in effect.",
     "terms.s8.title": "8. Contact us",
-    "terms.s8.p": "Questions? Email <a href=\"mailto:support@altipin.app\">support@altipin.app</a>."
+    "terms.s8.p": "Questions? Email <a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>."
   },
   "zh-Hans": {
     "lang.label": "语言",
@@ -117,7 +117,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · 本地优先 · 无需登录",
     "hero.title": "户外轨迹与海拔记录",
     "hero.subtitle": "指南针、实时海拔、速度表、运动追踪、经纬水印相机——你的口袋户外仪表盘。",
-    "hero.cta_appstore": "App Store 即将上线",
+    "hero.cta_appstore": "App Store 下载",
     "hero.cta_features": "了解功能",
     "features.label": "功能",
     "features.title": "六大核心模块",
@@ -176,7 +176,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. 政策变更",
     "privacy.s6.p": "我们可能不时更新本政策。重大变更将在本页面发布，并更新「最后更新」日期。",
     "privacy.s7.title": "7. 联系我们",
-    "privacy.s7.p": "如有隐私相关问题，请发送邮件至 <a href=\"mailto:support@altipin.app\">support@altipin.app</a>。",
+    "privacy.s7.p": "如有隐私相关问题，请发送邮件至 <a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>。",
     "terms.title": "使用协议",
     "terms.meta": "生效日期：2026 年 6 月 26 日 · 最后更新：2026 年 6 月 26 日",
     "terms.intro": "欢迎使用 AltiPin。下载、安装或使用本应用，即表示您同意以下条款。若您不同意，请勿使用本应用。",
@@ -201,7 +201,7 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. 适用法律",
     "terms.s7.p": "本协议受您所在司法辖区适用法律管辖。如条款部分无效，不影响其余条款的效力。",
     "terms.s8.title": "8. 联系我们",
-    "terms.s8.p": "如有疑问，请发送邮件至 <a href=\"mailto:support@altipin.app\">support@altipin.app</a>。"
+    "terms.s8.p": "如有疑问，请发送邮件至 <a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>。"
   },
   "zh-Hant": {
     "lang.label": "語言",
@@ -219,7 +219,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · 本地優先 · 無需登入",
     "hero.title": "戶外軌跡與海拔記錄",
     "hero.subtitle": "指南針、即時海拔、速度表、運動追蹤、經緯浮水印相機——你的口袋戶外儀表板。",
-    "hero.cta_appstore": "App Store 即將上線",
+    "hero.cta_appstore": "App Store 下載",
     "hero.cta_features": "了解功能",
     "features.label": "功能",
     "features.title": "六大核心模組",
@@ -278,7 +278,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. 政策变更",
     "privacy.s6.p": "我们可能不时更新本政策。重大变更将在本页面发布，并更新「最后更新」日期。",
     "privacy.s7.title": "7. 联系我们",
-    "privacy.s7.p": "如有隐私相关问题，请发送邮件至 <a href=\"mailto:support@altipin.app\">support@altipin.app</a>。",
+    "privacy.s7.p": "如有隐私相关问题，请发送邮件至 <a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>。",
     "terms.title": "使用協議",
     "terms.meta": "生效日期：2026 年 6 月 26 日 · 最后更新：2026 年 6 月 26 日",
     "terms.intro": "欢迎使用 AltiPin。下载、安装或使用本应用，即表示您同意以下条款。若您不同意，请勿使用本应用。",
@@ -303,7 +303,7 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. 适用法律",
     "terms.s7.p": "本协议受您所在司法辖区适用法律管辖。如条款部分无效，不影响其余条款的效力。",
     "terms.s8.title": "8. 联系我们",
-    "terms.s8.p": "如有疑问，请发送邮件至 <a href=\"mailto:support@altipin.app\">support@altipin.app</a>。"
+    "terms.s8.p": "如有疑问，请发送邮件至 <a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>。"
   },
   "es": {
     "lang.label": "Idioma",
@@ -321,7 +321,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · Local · Sin cuenta",
     "hero.title": "Registrador de rutas y altitud",
     "hero.subtitle": "Brújula, altitud en vivo, velocímetro, actividad y cámara con sello geo — tu panel outdoor de bolsillo.",
-    "hero.cta_appstore": "Próximamente en App Store",
+    "hero.cta_appstore": "Descargar en App Store",
     "hero.cta_features": "Ver funciones",
     "features.label": "Features",
     "features.title": "Seis módulos principales",
@@ -380,7 +380,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. Cambios",
     "privacy.s6.p": "Publicaremos cambios en esta página.",
     "privacy.s7.title": "7. Contacto",
-    "privacy.s7.p": "Email: <a href=\"mailto:support@altipin.app\">support@altipin.app</a>.",
+    "privacy.s7.p": "Email: <a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>.",
     "terms.title": "Términos de uso",
     "terms.meta": "Vigente: 26 jun 2026 · Última actualización: 26 jun 2026",
     "terms.intro": "Al usar AltiPin aceptas estos términos.",
@@ -405,7 +405,7 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. Ley aplicable",
     "terms.s7.p": "Según tu jurisdicción.",
     "terms.s8.title": "8. Contacto",
-    "terms.s8.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>"
+    "terms.s8.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>"
   },
   "pt-BR": {
     "lang.label": "Idioma",
@@ -423,7 +423,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · Local · Sem conta",
     "hero.title": "Gravador de trilhas e altitude",
     "hero.subtitle": "Bússola, altitude ao vivo, velocímetro, atividade e câmera com carimbo geo — seu painel outdoor de bolso.",
-    "hero.cta_appstore": "Em breve na App Store",
+    "hero.cta_appstore": "Baixar na App Store",
     "hero.cta_features": "Ver recursos",
     "features.label": "Features",
     "features.title": "Seis módulos principais",
@@ -482,7 +482,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. Alterações",
     "privacy.s6.p": "Alterações serão publicadas aqui.",
     "privacy.s7.title": "7. Contato",
-    "privacy.s7.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>",
+    "privacy.s7.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>",
     "terms.title": "Termos de uso",
     "terms.meta": "Vigência: 26 jun 2026 · Atualizado: 26 jun 2026",
     "terms.intro": "Ao usar o AltiPin você concorda com estes termos.",
@@ -507,7 +507,7 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. Lei aplicável",
     "terms.s7.p": "Conforme sua jurisdição.",
     "terms.s8.title": "8. Contato",
-    "terms.s8.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>"
+    "terms.s8.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>"
   },
   "ar": {
     "lang.label": "اللغة",
@@ -525,7 +525,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · محلي · بدون حساب",
     "hero.title": "مسجل المسارات والارتفاع",
     "hero.subtitle": "بوصلة، ارتفاع مباشر، عداد سرعة، نشاط وكاميرا جغرافية — لوحة outdoor في جيبك.",
-    "hero.cta_appstore": "قريباً على App Store",
+    "hero.cta_appstore": "تنزيل من App Store",
     "hero.cta_features": "استكشف الميزات",
     "features.label": "Features",
     "features.title": "ست وحدات أساسية",
@@ -584,7 +584,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. التغييرات",
     "privacy.s6.p": "ستُنشر التغييرات هنا.",
     "privacy.s7.title": "7. اتصل بنا",
-    "privacy.s7.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>",
+    "privacy.s7.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>",
     "terms.title": "شروط الاستخدام",
     "terms.meta": "ساري: 26 يونيو 2026 · آخر تحديث: 26 يونيو 2026",
     "terms.intro": "باستخدام AltiPin فإنك توافق على هذه الشروط.",
@@ -609,7 +609,7 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. القانون الحاكم",
     "terms.s7.p": "حسب ولايتك.",
     "terms.s8.title": "8. اتصل بنا",
-    "terms.s8.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>"
+    "terms.s8.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>"
   },
   "hi": {
     "lang.label": "भाषा",
@@ -627,7 +627,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · स्थानीय · बिना खाता",
     "hero.title": "आउटडोर ट्रैक और ऊँचाई रिकॉर्डर",
     "hero.subtitle": "कंपास, लाइव ऊँचाई, स्पीडोमीटर, गतिविधि और जियो-स्टैम्प कैमरा — आपका जेब आउटडोर डैशबोर्ड।",
-    "hero.cta_appstore": "App Store पर जल्द",
+    "hero.cta_appstore": "App Store पर डाउनलोड",
     "hero.cta_features": "फ़ीचर देखें",
     "features.label": "Features",
     "features.title": "छह मुख्य मॉड्यूल",
@@ -686,7 +686,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. परिवर्तन",
     "privacy.s6.p": "परिवर्तन यहाँ पोस्ट होंगे।",
     "privacy.s7.title": "7. संपर्क",
-    "privacy.s7.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>",
+    "privacy.s7.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>",
     "terms.title": "उपयोग की शर्तें",
     "terms.meta": "प्रभावी: 26 जून 2026 · अपडेट: 26 जून 2026",
     "terms.intro": "AltiPin का उपयोग करके आप इन शर्तों से सहमत हैं।",
@@ -711,7 +711,7 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. लागू कानून",
     "terms.s7.p": "आपके क्षेत्राधिकार के अनुसार।",
     "terms.s8.title": "8. संपर्क",
-    "terms.s8.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>"
+    "terms.s8.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>"
   },
   "fr": {
     "lang.label": "Langue",
@@ -729,7 +729,7 @@ window.ALTIPIN_LOCALES = {
     "hero.badge": "iOS · Local · Sans compte",
     "hero.title": "Traces et altitude outdoor",
     "hero.subtitle": "Boussole, altitude live, compteur, activité et caméra géo — votre tableau de bord de poche.",
-    "hero.cta_appstore": "Bientôt sur l'App Store",
+    "hero.cta_appstore": "Télécharger sur l'App Store",
     "hero.cta_features": "Découvrir",
     "features.label": "Features",
     "features.title": "Six modules",
@@ -788,7 +788,7 @@ window.ALTIPIN_LOCALES = {
     "privacy.s6.title": "6. Modifications",
     "privacy.s6.p": "Les changements seront publiés ici.",
     "privacy.s7.title": "7. Contact",
-    "privacy.s7.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>",
+    "privacy.s7.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>",
     "terms.title": "Conditions d'utilisation",
     "terms.meta": "En vigueur : 26 juin 2026 · Mise à jour : 26 juin 2026",
     "terms.intro": "En utilisant AltiPin vous acceptez ces conditions.",
@@ -813,6 +813,6 @@ window.ALTIPIN_LOCALES = {
     "terms.s7.title": "7. Droit applicable",
     "terms.s7.p": "Selon votre juridiction.",
     "terms.s8.title": "8. Contact",
-    "terms.s8.p": "<a href=\"mailto:support@altipin.app\">support@altipin.app</a>"
+    "terms.s8.p": "<a href=\"mailto:music.player.250617@gmail.com\">music.player.250617@gmail.com</a>"
   }
 };

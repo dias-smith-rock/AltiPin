@@ -89,7 +89,7 @@
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');
       const value = translate(key, locale);
-      if (el.hasAttribute('data-i18n-html')) {
+      if (el.getAttribute('data-i18n-html') === 'true' || el.hasAttribute('data-i18n-html') && el.getAttribute('data-i18n-html') !== 'false') {
         el.innerHTML = value;
       } else {
         el.textContent = value;
@@ -115,6 +115,24 @@
       localStorage.setItem(STORAGE_KEY, locale);
     } catch {
       /* ignore */
+    }
+
+    applySiteConfig();
+  }
+
+  function applySiteConfig() {
+    const config = window.ALTIPIN_SITE;
+    if (!config) return;
+
+    const appStoreLink = document.getElementById('app-store-link');
+    if (appStoreLink && config.appStoreURL) {
+      appStoreLink.href = config.appStoreURL;
+    }
+
+    const contactLink = document.getElementById('contact-email-link');
+    if (contactLink && config.contactEmail) {
+      contactLink.href = `mailto:${config.contactEmail}`;
+      contactLink.textContent = config.contactEmail;
     }
   }
 
