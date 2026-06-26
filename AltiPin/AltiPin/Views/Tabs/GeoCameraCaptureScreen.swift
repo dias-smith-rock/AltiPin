@@ -209,7 +209,7 @@ struct GeoCameraCaptureScreen: View {
             Text("Camera access is required to capture")
                 .font(.subheadline)
                 .foregroundStyle(.white.opacity(0.65))
-            Text("Allow AltiPin to access the camera and microphone in Settings.")
+            Text("Allow TopoLog to access the camera and microphone in Settings.")
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.45))
                 .multilineTextAlignment(.center)

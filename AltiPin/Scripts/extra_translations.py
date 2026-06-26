@@ -115,7 +115,7 @@ EXTRA_ZH: dict[str, str] = {
     "e.g. Office Building": "例如：公司大楼",
     "Capture Mode": "拍摄模式",
     "Camera access is required to capture": "需要相机权限才能拍摄",
-    "Allow AltiPin to access the camera and microphone in Settings.": "请在系统设置中允许 AltiPin 访问相机与麦克风。",
+    "Allow TopoLog to access the camera and microphone in Settings.": "请在系统设置中允许 TopoLog 访问相机与麦克风。",
     "Historical Record": "历史记录",
     "Please set your current floor": "请设定当前楼层",
     "Bundle ID": "Bundle ID",
@@ -135,5 +135,5 @@ EXTRA_ZH: dict[str, str] = {
     "Team Elevation Alignment": "全员海拔对齐",
     "Waiting for teammates…": "等待队友加入…",
     "Elevation (m)": "海拔 (m)",
-    "© 2026 GoodCraft": "© 2026 GoodCraft",
+    "© 2026 TopoLog": "© 2026 TopoLog",
 }

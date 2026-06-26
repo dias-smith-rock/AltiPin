@@ -17,7 +17,7 @@ struct AboutView: View {
                         .foregroundStyle(AltitudeTheme.accent)
                         .symbolRenderingMode(.hierarchical)
 
-                    Text("AltiPin")
+                    Text("TopoLog")
                         .font(.title2.weight(.semibold))
 
                     Text("Outdoor track and altitude recorder")
@@ -31,7 +31,6 @@ struct AboutView: View {
 
             Section {
                 infoRow(title: "Version", value: AppLinks.appVersionString)
-                infoRow(title: "Bundle ID", value: AppLinks.bundleIdentifier)
             }
 
             Section {
@@ -43,7 +42,7 @@ struct AboutView: View {
             }
 
             Section {
-                Text("© 2026 GoodCraft")
+                Text("© 2026 TopoLog")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)

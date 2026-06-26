@@ -438,7 +438,7 @@ final class NavigationEnvironmentController {
         let vText = formatAccuracy(location.verticalAccuracy)
 
         NSLog(
-            "[AltiPin Env] h=\(hText) v=\(vText) floor=\(floor) " +
+            "[TopoLog Env] h=\(hText) v=\(vText) floor=\(floor) " +
             "speed=\(String(format: "%.1f", speed)) motion=\(motion) " +
             "→ \(assessment.environment.rawValue) (reason: \(assessment.reason))"
         )

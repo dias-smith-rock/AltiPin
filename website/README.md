@@ -1,6 +1,6 @@
-# AltiPin 官网
+# TopoLog 官网
 
-AltiPin 产品静态官网，部署至 [compass.sryze.cc](https://compass.sryze.cc)。
+TopoLog 产品静态官网，部署至 [compass.sryze.cc](https://compass.sryze.cc)。
 
 ## 目录结构
 
@@ -34,7 +34,7 @@ website/
 **语言选择优先级：**
 
 1. URL 参数 `?lang=zh-Hans`
-2. 浏览器 `localStorage`（`altipin-lang`）
+2. 浏览器 `localStorage`（`topolog-lang`）
 3. 浏览器系统语言
 4. 回退到英语（`en`）
 
@@ -61,8 +61,8 @@ python3 -m http.server 8080
 ### 1. 提交并推送代码
 
 ```bash
-cd /path/to/AltiPin   # 仓库根目录
-git add website/ .github/workflows/deploy-website.yml AltiPin/AltiPin/Config/AppLinks.swift
+cd /path/to/TopoLog   # 仓库根目录
+git add website/ .github/workflows/deploy-website.yml TopoLog/TopoLog/Config/AppLinks.swift
 git commit -m "Add product website for compass.sryze.cc"
 git push origin main
 ```
@@ -70,11 +70,11 @@ git push origin main
 ### 2. 启用 GitHub Pages
 
 1. 打开仓库 **Settings → Pages**
-   - 地址：<https://github.com/dias-smith-rock/AltiPin/settings/pages>
+   - 地址：<https://github.com/dias-smith-rock/TopoLog/settings/pages>
 2. **Build and deployment → Source** 选择 **GitHub Actions**（不要选 Deploy from a branch）
 3. 推送代码后，在 **Actions** 标签页等待 **Deploy Website** 工作流完成（绿色 ✓）
 
-首次部署成功后，站点可通过 `https://dias-smith-rock.github.io/AltiPin/` 访问（启用自定义域名后以自定义域名为准）。
+首次部署成功后，站点可通过 `https://dias-smith-rock.github.io/TopoLog/` 访问（启用自定义域名后以自定义域名为准）。
 
 ### 3. 配置自定义域名
 
@@ -121,5 +121,5 @@ dig compass.sryze.cc CNAME +short
 
 ## 相关链接
 
-- GitHub 仓库：<https://github.com/dias-smith-rock/AltiPin>
+- GitHub 仓库：<https://github.com/dias-smith-rock/TopoLog>
 - 联系邮箱：music.player.250617@gmail.com

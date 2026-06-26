@@ -8,7 +8,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "AltiPin"
+            "value" : "TopoLog"
           }
         }
       }
@@ -31,55 +31,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يحتاج AltiPin إلى الوصول إلى الكاميرا لالتقاط صور وفيديوهات بعلامة مائية جغرافية."
+            "value" : "يحتاج TopoLog إلى الوصول إلى الكاميرا لالتقاط صور وفيديوهات بعلامة مائية جغرافية."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin needs camera access to capture photos and videos with geo stamps."
+            "value" : "TopoLog needs camera access to capture photos and videos with geo stamps."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin necesita acceso a la cámara para capturar fotos y videos con marcas geográficas."
+            "value" : "TopoLog necesita acceso a la cámara para capturar fotos y videos con marcas geográficas."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin a besoin de l'appareil photo pour capturer des photos et vidéos avec tampon géo."
+            "value" : "TopoLog a besoin de l'appareil photo pour capturer des photos et vidéos avec tampon géo."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin को जियो स्टैम्प वाली फ़ोटो और वीडियो के लिए कैमरा एक्सेस चाहिए।"
+            "value" : "TopoLog को जियो स्टैम्प वाली फ़ोटो और वीडियो के लिए कैमरा एक्सेस चाहिए।"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPinは位置情報スタンプ付きの写真・動画撮影のためにカメラへのアクセスが必要です。"
+            "value" : "TopoLogは位置情報スタンプ付きの写真・動画撮影のためにカメラへのアクセスが必要です。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin precisa de acesso à câmera para capturar fotos e vídeos com carimbo geográfico."
+            "value" : "TopoLog precisa de acesso à câmera para capturar fotos e vídeos com carimbo geográfico."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要相机权限以拍摄带经纬度水印的照片与视频。"
+            "value" : "TopoLog 需要相机权限以拍摄带经纬度水印的照片与视频。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要相機權限以拍攝帶經緯度浮水印的照片與影片。"
+            "value" : "TopoLog 需要相機權限以拍攝帶經緯度浮水印的照片與影片。"
           }
         }
       }
@@ -90,55 +90,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يحتاج AltiPin إلى موقعك في الخلفية لتسجيل المسارات والارتفاع."
+            "value" : "يحتاج TopoLog إلى موقعك في الخلفية لتسجيل المسارات والارتفاع."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin needs your location in the background to record tracks and elevation."
+            "value" : "TopoLog needs your location in the background to record tracks and elevation."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin necesita tu ubicación en segundo plano para registrar rutas y altitud."
+            "value" : "TopoLog necesita tu ubicación en segundo plano para registrar rutas y altitud."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin a besoin de votre position en arrière-plan pour enregistrer traces et altitude."
+            "value" : "TopoLog a besoin de votre position en arrière-plan pour enregistrer traces et altitude."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin को ट्रैक और ऊंचाई रिकॉर्ड करने के लिए पृष्ठभूमि में स्थान चाहिए।"
+            "value" : "TopoLog को ट्रैक और ऊंचाई रिकॉर्ड करने के लिए पृष्ठभूमि में स्थान चाहिए।"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPinは軌跡と標高を記録するためにバックグラウンドでの位置情報が必要です。"
+            "value" : "TopoLogは軌跡と標高を記録するためにバックグラウンドでの位置情報が必要です。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin precisa da sua localização em segundo plano para registrar trilhas e altitude."
+            "value" : "TopoLog precisa da sua localização em segundo plano para registrar trilhas e altitude."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要在后台记录您的徒步、骑行轨迹与海拔。"
+            "value" : "TopoLog 需要在后台记录您的徒步、骑行轨迹与海拔。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要在背景記錄您的徒步、騎行軌跡與海拔。"
+            "value" : "TopoLog 需要在背景記錄您的徒步、騎行軌跡與海拔。"
           }
         }
       }
@@ -149,55 +149,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يحتاج AltiPin إلى موقعك لتسجيل المسارات والارتفاع."
+            "value" : "يحتاج TopoLog إلى موقعك لتسجيل المسارات والارتفاع."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin needs your location to record tracks and elevation."
+            "value" : "TopoLog needs your location to record tracks and elevation."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin necesita tu ubicación para registrar rutas y altitud."
+            "value" : "TopoLog necesita tu ubicación para registrar rutas y altitud."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin a besoin de votre position pour enregistrer traces et altitude."
+            "value" : "TopoLog a besoin de votre position pour enregistrer traces et altitude."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin को ट्रैक और ऊंचाई रिकॉर्ड करने के लिए स्थान चाहिए।"
+            "value" : "TopoLog को ट्रैक और ऊंचाई रिकॉर्ड करने के लिए स्थान चाहिए।"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPinは軌跡と標高を記録するために位置情報が必要です。"
+            "value" : "TopoLogは軌跡と標高を記録するために位置情報が必要です。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin precisa da sua localização para registrar trilhas e altitude."
+            "value" : "TopoLog precisa da sua localização para registrar trilhas e altitude."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要定位权限以记录轨迹与海拔。"
+            "value" : "TopoLog 需要定位权限以记录轨迹与海拔。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要定位權限以記錄軌跡與海拔。"
+            "value" : "TopoLog 需要定位權限以記錄軌跡與海拔。"
           }
         }
       }
@@ -208,55 +208,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يحتاج AltiPin إلى الميكروفون لتسجيل فيديوهات بعلامة مائية جغرافية."
+            "value" : "يحتاج TopoLog إلى الميكروفون لتسجيل فيديوهات بعلامة مائية جغرافية."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin needs microphone access to record videos with geo stamps."
+            "value" : "TopoLog needs microphone access to record videos with geo stamps."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin necesita acceso al micrófono para grabar videos con marcas geográficas."
+            "value" : "TopoLog necesita acceso al micrófono para grabar videos con marcas geográficas."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin a besoin du micro pour enregistrer des vidéos avec tampon géo."
+            "value" : "TopoLog a besoin du micro pour enregistrer des vidéos avec tampon géo."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin को जियो स्टैम्प वाले वीडियो के लिए माइक्रोफ़ोन चाहिए।"
+            "value" : "TopoLog को जियो स्टैम्प वाले वीडियो के लिए माइक्रोफ़ोन चाहिए।"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPinは位置情報スタンプ付き動画録画のためにマイクへのアクセスが必要です。"
+            "value" : "TopoLogは位置情報スタンプ付き動画録画のためにマイクへのアクセスが必要です。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin precisa de acesso ao microfone para gravar vídeos com carimbo geográfico."
+            "value" : "TopoLog precisa de acesso ao microfone para gravar vídeos com carimbo geográfico."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要麦克风权限以录制带地理信息水印的视频。"
+            "value" : "TopoLog 需要麦克风权限以录制带地理信息水印的视频。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要麥克風權限以錄製帶地理資訊浮水印的影片。"
+            "value" : "TopoLog 需要麥克風權限以錄製帶地理資訊浮水印的影片。"
           }
         }
       }
@@ -267,55 +267,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يستخدم AltiPin حالة الحركة للبدء/الإيقاف التلقائي للتسجيل لتوفير البطارية."
+            "value" : "يستخدم TopoLog حالة الحركة للبدء/الإيقاف التلقائي للتسجيل لتوفير البطارية."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin uses motion activity to auto start/stop recording and save battery."
+            "value" : "TopoLog uses motion activity to auto start/stop recording and save battery."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin usa la actividad de movimiento para iniciar/detener la grabación automáticamente."
+            "value" : "TopoLog usa la actividad de movimiento para iniciar/detener la grabación automáticamente."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin utilise l'activité de mouvement pour démarrer/arrêter l'enregistrement automatiquement."
+            "value" : "TopoLog utilise l'activité de mouvement pour démarrer/arrêter l'enregistrement automatiquement."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin बैटरी बचाने के लिए गति से ऑटो रिकॉर्डिंग शुरू/रोकता है।"
+            "value" : "TopoLog बैटरी बचाने के लिए गति से ऑटो रिकॉर्डिंग शुरू/रोकता है।"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPinは省電力のためモーション状態で記録を自動開始/停止します。"
+            "value" : "TopoLogは省電力のためモーション状態で記録を自動開始/停止します。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin usa atividade de movimento para iniciar/parar gravação automaticamente."
+            "value" : "TopoLog usa atividade de movimento para iniciar/parar gravação automaticamente."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 通过运动状态识别自动开始/停止记录，以节省电量。"
+            "value" : "TopoLog 通过运动状态识别自动开始/停止记录，以节省电量。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 透過運動狀態識別自動開始/停止記錄，以節省電量。"
+            "value" : "TopoLog 透過運動狀態識別自動開始/停止記錄，以節省電量。"
           }
         }
       }
@@ -326,55 +326,55 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يحتاج AltiPin إلى الوصول إلى الصور لحفظ المحتوى الملتقط."
+            "value" : "يحتاج TopoLog إلى الوصول إلى الصور لحفظ المحتوى الملتقط."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin needs photo library access to save captured content."
+            "value" : "TopoLog needs photo library access to save captured content."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin necesita acceso a Fotos para guardar el contenido capturado."
+            "value" : "TopoLog necesita acceso a Fotos para guardar el contenido capturado."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin a besoin d'accéder à Photos pour enregistrer le contenu capturé."
+            "value" : "TopoLog a besoin d'accéder à Photos pour enregistrer le contenu capturé."
           }
         },
         "hi" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin को कैप्चर सामग्री सहेजने के लिए फ़ोटो लाइब्रेरी एक्सेस चाहिए।"
+            "value" : "TopoLog को कैप्चर सामग्री सहेजने के लिए फ़ोटो लाइब्रेरी एक्सेस चाहिए।"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPinは撮影内容を写真に保存するためにライブラリへのアクセスが必要です。"
+            "value" : "TopoLogは撮影内容を写真に保存するためにライブラリへのアクセスが必要です。"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin precisa de acesso às Fotos para salvar conteúdo capturado."
+            "value" : "TopoLog precisa de acesso às Fotos para salvar conteúdo capturado."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要相册写入权限以保存拍摄内容到系统相册。"
+            "value" : "TopoLog 需要相册写入权限以保存拍摄内容到系统相册。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AltiPin 需要相簿寫入權限以儲存拍攝內容到系統相簿。"
+            "value" : "TopoLog 需要相簿寫入權限以儲存拍攝內容到系統相簿。"
           }
         }
       }

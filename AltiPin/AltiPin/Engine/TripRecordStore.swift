@@ -159,14 +159,14 @@ private enum SessionGPXWriter {
 
         var content = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <gpx version="1.1" creator="AltiPin"
+        <gpx version="1.1" creator="TopoLog"
              xmlns="http://www.topografix.com/GPX/1/1"
              xmlns:altipin="https://altipin.app/gpx">
           <metadata>
             <time>\(isoFormatter.string(from: startTime))</time>
           </metadata>
           <trk>
-            <name>AltiPin Session</name>
+            <name>TopoLog Session</name>
             <trkseg>
 
         """

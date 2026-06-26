@@ -7,7 +7,7 @@ import Foundation
 
 enum AppLinks {
     static let feedbackEmail = "music.player.250617@gmail.com"
-    static let feedbackSubject = "AltiPin Feedback"
+    static let feedbackSubject = "TopoLog Feedback"
 
     static let privacyPolicyURL = URL(string: "http://www.compass.sryze.cc/privacy/?lang=en")!
     static let termsOfUseURL = URL(string: "http://www.compass.sryze.cc/terms/?lang=en")!
@@ -34,7 +34,7 @@ enum AppLinks {
         
         
         ---
-        App: AltiPin \(appVersionString)
+        App: TopoLog \(appVersionString)
         Device: \(deviceDescription)
         iOS: \(systemVersion)
         """

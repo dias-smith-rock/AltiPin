@@ -1,11 +1,11 @@
 /**
- * AltiPin website i18n engine.
+ * TopoLog website i18n engine.
  * Default locale: en
  */
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'altipin-lang';
+  const STORAGE_KEY = 'topolog-lang';
   const DEFAULT_LOCALE = 'en';
   const SUPPORTED = ['en', 'zh-Hans', 'zh-Hant', 'es', 'pt-BR', 'ar', 'hi', 'fr'];
   const RTL = new Set(['ar']);
@@ -60,7 +60,7 @@
   }
 
   function getMessages(locale) {
-    const all = window.ALTIPIN_LOCALES || {};
+    const all = window.TOPOLOG_LOCALES || {};
     return all[locale] || all[DEFAULT_LOCALE] || {};
   }
 
@@ -121,7 +121,7 @@
   }
 
   function applySiteConfig() {
-    const config = window.ALTIPIN_SITE;
+    const config = window.TOPOLOG_SITE;
     if (!config) return;
 
     const appStoreLink = document.getElementById('app-store-link');
@@ -185,5 +185,5 @@
     init();
   }
 
-  window.AltiPinI18n = { getLocale, applyToDocument, translate, SUPPORTED, DEFAULT_LOCALE };
+  window.TopoLogI18n = { getLocale, applyToDocument, translate, SUPPORTED, DEFAULT_LOCALE };
 })();

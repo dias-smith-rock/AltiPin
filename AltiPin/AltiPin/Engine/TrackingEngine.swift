@@ -1031,7 +1031,7 @@ private final class GPXTrackWriter: @unchecked Sendable {
         let metadataTime = isoFormatter.string(from: trackDate)
         let header = """
         <?xml version="1.0" encoding="UTF-8"?>
-        <gpx version="1.1" creator="AltiPin" xmlns="http://www.topografix.com/GPX/1/1" xmlns:altipin="https://altipin.app/gpx/1">
+        <gpx version="1.1" creator="TopoLog" xmlns="http://www.topografix.com/GPX/1/1" xmlns:altipin="https://altipin.app/gpx/1">
             <metadata>
                 <time>\(metadataTime)</time>
             </metadata>
