@@ -9,9 +9,9 @@ enum AppLinks {
     static let feedbackEmail = "support@altipin.app"
     static let feedbackSubject = "AltiPin Feedback"
 
-    static let privacyPolicyURL = URL(string: "https://altipin.app/privacy")!
-    static let termsOfUseURL = URL(string: "https://altipin.app/terms")!
-    static let websiteURL = URL(string: "https://altipin.app")!
+    static let privacyPolicyURL = URL(string: "https://compass.sryze.cc/privacy")!
+    static let termsOfUseURL = URL(string: "https://compass.sryze.cc/terms")!
+    static let websiteURL = URL(string: "https://compass.sryze.cc")!
 
     /// 上线前替换为真实 App Store ID
     static let appStoreReviewURL = URL(string: "https://apps.apple.com/app/id0000000000?action=write-review")!
