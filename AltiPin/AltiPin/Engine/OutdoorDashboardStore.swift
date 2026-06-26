@@ -1029,14 +1029,12 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         return store
     }
 
-    #if DEBUG
     func configurePreviewActivitySession(duration: TimeInterval, distanceMeters: Double) {
         activitySessionPhase = .running
         activityAccumulatedDuration = duration
         sessionDuration = duration
         cumulativeDistanceMeters = distanceMeters
     }
-    #endif
 
     static func previewIdle() -> OutdoorDashboardStore {
         let store = preview()
