@@ -10,10 +10,42 @@ website/
 ├── privacy/index.html  # 隐私政策 → /privacy/
 ├── terms/index.html    # 使用协议 → /terms/
 ├── css/styles.css
+├── js/
+│   ├── i18n.js         # 语言检测与切换
+│   └── locales.js      # 8 语言翻译包
 ├── assets/favicon.svg
 ├── CNAME               # 自定义域名
 └── robots.txt
 ```
+
+## 多语言支持
+
+| 语言代码 | 语言 |
+|----------|------|
+| `en` | English（**默认**） |
+| `zh-Hans` | 简体中文 |
+| `zh-Hant` | 繁體中文 |
+| `es` | Español |
+| `pt-BR` | Português (Brasil) |
+| `ar` | العربية（RTL） |
+| `hi` | हिन्दी |
+| `fr` | Français |
+
+**语言选择优先级：**
+
+1. URL 参数 `?lang=zh-Hans`
+2. 浏览器 `localStorage`（`altipin-lang`）
+3. 浏览器系统语言
+4. 回退到英语（`en`）
+
+页面右上角有语言下拉菜单，切换后会写入 `localStorage` 并更新 URL。
+
+**示例：**
+
+- `https://compass.sryze.cc/?lang=zh-Hans`
+- `https://compass.sryze.cc/privacy/?lang=fr`
+
+**添加或修改翻译：** 编辑 [`js/locales.js`](js/locales.js) 中对应语言的对象，键名与 HTML 上的 `data-i18n` 属性一致。
 
 ## 本地预览
 
