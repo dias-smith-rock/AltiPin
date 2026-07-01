@@ -291,4 +291,9 @@ final class FootprintTrackingEngine: ObservableObject {
         )
         return .updated
     }
+
+    /// 重连校准阶段：仅微调内存窗口海拔，保持图表视觉连续（不写 SwiftData）。
+    func applyInMemoryFootprintAdjustments(_ footprints: [FootprintPoint]) {
+        recentFootprints = footprints
+    }
 }

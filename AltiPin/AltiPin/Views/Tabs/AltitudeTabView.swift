@@ -31,6 +31,7 @@ struct AltitudeTabView: View {
                         matchedBuildingLabel: store.matchedBuildingLabel,
                         floorCalibrationSource: store.floorCalibrationSource,
                         isManualNavigationOverride: store.isManualNavigationOverride,
+                        isBlackboxModeActive: store.isBlackboxElevationModeActive,
                         isRefreshDisabled: isRefreshingData,
                         onRefresh: refreshAll
                     )

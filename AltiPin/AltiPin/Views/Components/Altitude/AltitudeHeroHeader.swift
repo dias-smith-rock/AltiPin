@@ -16,6 +16,7 @@ struct AltitudeHeroHeader: View {
     var matchedBuildingLabel: String?
     var floorCalibrationSource: FloorCalibrationSource?
     var isManualNavigationOverride: Bool = false
+    var isBlackboxModeActive: Bool = false
     var isRefreshDisabled: Bool = false
     let onRefresh: () -> Void
 
@@ -54,12 +55,14 @@ struct AltitudeHeroHeader: View {
 
                     if isIndoorMode {
                         indoorModeBadge
+                    } else if isBlackboxModeActive {
+                        blackboxModeBadge
                     }
                 }
 
                 Spacer()
 
-                if !isIndoorMode, verticalAccuracy >= 0 {
+                if !isIndoorMode, !isBlackboxModeActive, verticalAccuracy >= 0 {
                     Text(String(format: "±%.2fm", verticalAccuracy))
                         .font(.caption)
                         .foregroundStyle(.white.opacity(0.75))
@@ -73,6 +76,7 @@ struct AltitudeHeroHeader: View {
 
     private var heroSubtitle: String {
         guard isIndoorMode else {
+            if isBlackboxModeActive { return L10n.t("Barometric Fallback · Offline GPS") }
             if isManualNavigationOverride { return L10n.t("Current Elevation · Manual Outdoor") }
             return L10n.t("Current Elevation:")
         }
@@ -105,6 +109,17 @@ struct AltitudeHeroHeader: View {
         .padding(.top, 2)
     }
 
+    private var blackboxModeBadge: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "sensor.tag.radiowaves.forward.fill")
+                .font(.caption2)
+            Text(L10n.t("Blackbox · Barometer"))
+                .font(.caption)
+        }
+        .foregroundStyle(Color(red: 0.55, green: 0.82, blue: 1.0).opacity(0.85))
+        .padding(.top, 2)
+    }
+
     private var indoorBadgeText: String {
         if needsFloorCalibration {
             return L10n.t("Set Current Floor")
@@ -119,11 +134,17 @@ struct AltitudeHeroHeader: View {
     private var heroBackground: some View {
         ZStack {
             LinearGradient(
-                colors: [
-                    Color(red: 0.12, green: 0.28, blue: 0.55),
-                    Color(red: 0.05, green: 0.10, blue: 0.22),
-                    Color.black,
-                ],
+                colors: isBlackboxModeActive
+                    ? [
+                        Color(red: 0.06, green: 0.08, blue: 0.12),
+                        Color(red: 0.02, green: 0.04, blue: 0.08),
+                        Color.black,
+                    ]
+                    : [
+                        Color(red: 0.12, green: 0.28, blue: 0.55),
+                        Color(red: 0.05, green: 0.10, blue: 0.22),
+                        Color.black,
+                    ],
                 startPoint: .top,
                 endPoint: .bottom
             )

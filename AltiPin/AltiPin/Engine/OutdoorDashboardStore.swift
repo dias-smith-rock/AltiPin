@@ -62,6 +62,11 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     @Published private(set) var recentHistoryPoints: [HistoryPoint] = []
     @Published private(set) var activitySessionPhase: ActivitySessionPhase = .idle
 
+    /// 飞行模式 / 弱 GPS 下气压计托底是否激活。
+    var isBlackboxElevationModeActive: Bool {
+        elevationOrchestrator.isBlackboxModeActive
+    }
+
     var speedSessionAverageSpeedKmh: Double {
         guard speedSessionDuration > 0 else { return 0 }
         let hours = speedSessionDuration / 3600
@@ -69,6 +74,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         return (speedSessionDistanceMeters / 1000) / hours
     }
 
+    private let elevationOrchestrator = OfflineElevationOrchestrator.shared
     private let locationManager = CLLocationManager()
     private let altimeter = CMAltimeter()
     private let motionActivityManager = CMMotionActivityManager()
@@ -101,6 +107,7 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     private var latestMotionActivity: CMMotionActivity?
     private var lastKnownLocation: CLLocation?
     private var recentHistoryCancellable: AnyCancellable?
+    private var elevationFusionCancellable: AnyCancellable?
     private var forcedLocationRefreshContinuation: CheckedContinuation<CLLocation?, Never>?
     private var forcedRefreshStartedAt: Date?
 
@@ -169,6 +176,9 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         navigationEnvironmentControlMode = .automatic
         NavigationEnvironmentOverrideCenter.reset()
         latestMotionActivity = nil
+        elevationOrchestrator.configure(useExternalLocationFeed: true)
+        elevationOrchestrator.start()
+        bindElevationFusionUpdates()
 
         locationManager.requestWhenInUseAuthorization()
         locationManager.startUpdatingLocation()
@@ -191,6 +201,9 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
         }
 
         isMonitoring = false
+        elevationFusionCancellable?.cancel()
+        elevationFusionCancellable = nil
+        elevationOrchestrator.stop()
         locationManager.stopUpdatingLocation()
         locationManager.stopUpdatingHeading()
         altimeter.stopRelativeAltitudeUpdates()
@@ -462,7 +475,8 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
                     self.altimeterReference = relative
                 }
                 let offset = relative - (self.altimeterReference ?? relative)
-                if let baseline = self.gpsBaselineAltitude {
+                if let baseline = self.gpsBaselineAltitude,
+                   !self.elevationOrchestrator.isBlackboxModeActive {
                     self.elevationMeters = baseline + offset
                 }
                 self.pressureHPa = pressureKPa * 10
@@ -691,15 +705,28 @@ final class OutdoorDashboardStore: NSObject, ObservableObject {
     }
 
     private func ingestFootprintIfNeeded(location: CLLocation) {
-        guard horizontalAccuracy >= 0 else { return }
-
-        let elevation = resolvedElevation(for: location)
-        FootprintTrackingEngine.shared.ingest(
+        let fused = elevationOrchestrator.feed(
             location: location,
-            elevation: elevation,
-            isIndoor: navigationEnvironment == .indoor,
-            motionActivity: latestMotionActivity
+            motionActivity: latestMotionActivity,
+            isIndoor: navigationEnvironment == .indoor
         )
+
+        guard navigationEnvironment != .indoor else { return }
+        if fused > 0 {
+            elevationMeters = fused
+        }
+    }
+
+    private func bindElevationFusionUpdates() {
+        elevationFusionCancellable?.cancel()
+        elevationFusionCancellable = elevationOrchestrator.$fusedElevationMeters
+            .receive(on: RunLoop.main)
+            .sink { [weak self] fused in
+                guard let self else { return }
+                guard self.navigationEnvironment != .indoor else { return }
+                guard self.elevationOrchestrator.isBlackboxModeActive, fused > 0 else { return }
+                self.elevationMeters = fused
+            }
     }
 
     private func evaluateNavigationEnvironment(with location: CLLocation, triggerHaptic: Bool = true) {

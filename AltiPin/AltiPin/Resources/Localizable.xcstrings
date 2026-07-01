@@ -1564,6 +1564,12 @@
         }
       }
     },
+    "Barometric elevation fallback is unavailable on this device." : {
+
+    },
+    "Barometric Fallback · Offline GPS" : {
+
+    },
     "Barometric Inference:" : {
       "localizations" : {
         "ar" : {
@@ -1737,6 +1743,9 @@
           }
         }
       }
+    },
+    "Blackbox · Barometer" : {
+
     },
     "Boiling Point of Water" : {
       "localizations" : {
@@ -2146,6 +2155,7 @@
       }
     },
     "Camera not ready. Please try again." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -2378,6 +2388,7 @@
       }
     },
     "Cannot start recording. Check camera and microphone permissions." : {
+      "extractionState" : "stale",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -14696,6 +14707,12 @@
       }
     },
     "TopoLog" : {
+
+    },
+    "TopoLog needs your location to record tracks and elevation." : {
+
+    },
+    "TopoLog uses motion activity to auto start/stop recording and save battery." : {
 
     },
     "Track History" : {
