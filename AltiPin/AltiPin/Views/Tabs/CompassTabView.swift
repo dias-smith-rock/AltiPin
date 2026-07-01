@@ -28,6 +28,10 @@ struct CompassTabView: View {
 
             compassLocationRow
                 .padding(.horizontal, 20)
+                .padding(.bottom, 4)
+
+            WeatherAttributionServiceView(weatherService: weatherService, markHeight: 16)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 8)
 
             headingSection

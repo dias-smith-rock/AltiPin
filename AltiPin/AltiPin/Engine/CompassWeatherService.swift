@@ -8,6 +8,12 @@ import CoreLocation
 import Foundation
 import WeatherKit
 
+enum WeatherDataSource: String, Sendable {
+    case none
+    case weatherKit
+    case openMeteo
+}
+
 @MainActor
 final class CompassWeatherService: ObservableObject {
     @Published private(set) var localityName: String = "—"
@@ -20,11 +26,23 @@ final class CompassWeatherService: ObservableObject {
     @Published private(set) var windLevel: Int?
     @Published private(set) var conditionName: String = "—"
     @Published private(set) var conditionSymbol: String = "cloud"
+    @Published private(set) var dataSource: WeatherDataSource = .none
+    @Published private(set) var attribution: WeatherAttribution?
 
     private let weatherService = WeatherService.shared
     private let geocoder = CLGeocoder()
     private var lastRefreshCoordinate: CLLocationCoordinate2D?
     private var hasLoadedWeather = false
+    private var hasLoadedAttribution = false
+
+    var usesAppleWeatherData: Bool {
+        dataSource == .weatherKit
+    }
+
+    var weatherAttributionLabel: String? {
+        guard usesAppleWeatherData else { return nil }
+        return attribution?.serviceName
+    }
 
     func refresh(for location: CLLocation) async {
         let shouldSkipDueToDistance: Bool
@@ -72,11 +90,23 @@ final class CompassWeatherService: ObservableObject {
     private func refreshWeather(for location: CLLocation) async {
         if await refreshWeatherKit(for: location) {
             hasLoadedWeather = true
+            await refreshAttributionIfNeeded()
             return
         }
 
         if await refreshOpenMeteo(for: location) {
             hasLoadedWeather = true
+            dataSource = .openMeteo
+        }
+    }
+
+    private func refreshAttributionIfNeeded() async {
+        guard !hasLoadedAttribution else { return }
+        do {
+            attribution = try await weatherService.attribution
+            hasLoadedAttribution = true
+        } catch {
+            NSLog("CompassWeatherService: attribution failed — \(error.localizedDescription)")
         }
     }
 
@@ -102,6 +132,7 @@ final class CompassWeatherService: ObservableObject {
             )
             conditionSymbol = current.symbolName
             conditionName = Self.conditionName(for: current.condition)
+            dataSource = .weatherKit
             return true
         } catch {
             NSLog("CompassWeatherService: WeatherKit failed — \(error.localizedDescription)")
@@ -144,6 +175,7 @@ final class CompassWeatherService: ObservableObject {
             }
             conditionSymbol = Self.symbol(forWeatherCode: current.weatherCode)
             conditionName = AltitudeCalculations.conditionName(forWeatherCode: current.weatherCode)
+            dataSource = .openMeteo
             NSLog("CompassWeatherService: using Open-Meteo fallback")
             return true
         } catch {

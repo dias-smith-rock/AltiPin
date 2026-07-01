@@ -141,6 +141,13 @@ struct GeoCameraCaptureScreen: View {
                 GeoStampOverlayView(metadata: liveMetadata)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
+                WeatherAttributionServiceView(
+                    weatherService: weatherService,
+                    markHeight: 14,
+                    alignment: .leading
+                )
+                .padding(.horizontal, 4)
+
                 captureControls
                     .padding(.bottom, 4)
             }

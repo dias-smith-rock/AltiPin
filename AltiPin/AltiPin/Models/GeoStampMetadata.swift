@@ -15,6 +15,8 @@ struct GeoStampMetadata: Equatable, Sendable {
     let weatherCondition: String
     let temperatureCelsius: Double?
     let coordinateLabel: String
+    let usesAppleWeatherData: Bool
+    let weatherAttributionLabel: String?
 
     @MainActor
     static func capture(
@@ -40,7 +42,9 @@ struct GeoStampMetadata: Equatable, Sendable {
             locality: weather.localityName,
             weatherCondition: weather.conditionName,
             temperatureCelsius: weather.temperatureCelsius,
-            coordinateLabel: store.coordinateDMSString
+            coordinateLabel: store.coordinateDMSString,
+            usesAppleWeatherData: weather.usesAppleWeatherData,
+            weatherAttributionLabel: weather.weatherAttributionLabel
         )
     }
 
@@ -57,6 +61,9 @@ struct GeoStampMetadata: Equatable, Sendable {
             weatherLine += String(format: " %.0f°C", temperatureCelsius)
         }
         lines.append(weatherLine)
+        if usesAppleWeatherData {
+            lines.append(weatherAttributionLabel ?? L10n.t("Weather"))
+        }
         return lines
     }
 

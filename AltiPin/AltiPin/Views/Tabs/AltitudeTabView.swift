@@ -431,6 +431,10 @@ struct AltitudeTabView: View {
                 AltitudeMetricItem(label: "Wind Speed", value: windSpeedText),
                 AltitudeMetricItem(label: "Wind Direction Angle", value: windDirectionDegreesText),
             ])
+
+            WeatherAttributionServiceView(weatherService: weatherService)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
         }
     }
 
